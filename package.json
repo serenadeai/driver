@@ -1,0 +1,14 @@
+{
+  "name": "driver",
+  "version": "1.0.0",
+  "description": "A library for cross-platform system automations.",
+  "main": "index.js",
+  "repository": "https://github.com/serenadeai/driver",
+  "author": "Serenade",
+  "license": "MIT",
+  "gypfile": true,
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "node-addon-api": "^3.1.0"
+  }
+}
