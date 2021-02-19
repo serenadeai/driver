@@ -1,7 +1,6 @@
 #import <AppKit/AppKit.h>
 #import <Carbon/Carbon.h>
 #import <Foundation/Foundation.h>
-#include <iostream>
 #include <vector>
 
 #define kVirtualKeyNotFound 65535

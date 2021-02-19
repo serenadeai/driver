@@ -3,7 +3,11 @@
 #include <vector>
 
 #if __APPLE__
+#include <unistd.h>
 #include "lib/mac.hpp"
+#else
+#include <Windows.h>
+#include "lib/windows.hpp"
 #endif
 
 Napi::Value FocusApplication(const Napi::CallbackInfo& info) {
@@ -40,9 +44,13 @@ Napi::Value PressKey(const Napi::CallbackInfo& info) {
   return env.Null();
 }
 
-Napi::Value Sleep(const Napi::CallbackInfo& info) {
+Napi::Value SleepMilliseconds(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  sleep(1000 * info[0].As<Napi::Number>().Int32Value());
+#ifdef __APPLE__
+  usleep(1000 * info[0].As<Napi::Number>().Int32Value());
+#else
+  Sleep(info[0].As<Napi::Number>().Int32Value());
+#endif
   return env.Null();
 }
 
@@ -66,7 +74,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, GetRunningApplications));
   exports.Set(Napi::String::New(env, "pressKey"),
               Napi::Function::New(env, PressKey));
-  exports.Set(Napi::String::New(env, "sleep"), Napi::Function::New(env, Sleep));
+  exports.Set(Napi::String::New(env, "sleep"), Napi::Function::New(env, SleepMilliseconds));
   exports.Set(Napi::String::New(env, "typeText"),
               Napi::Function::New(env, TypeText));
   return exports;
