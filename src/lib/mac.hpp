@@ -25,7 +25,7 @@ std::string KeyCodeToString(int keyCode, bool shift) {
   return [(NSString*)CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1) UTF8String];
 }
 
-CGKeyCode VirtualKey(std::string key, bool shift) {
+CGKeyCode VirtualKey(const std::string& key, bool shift) {
   if (key == "enter") {
     return CGKeyCode(kVK_Return);
   } else if (key == "return") {
@@ -107,12 +107,14 @@ CGKeyCode VirtualKey(std::string key, bool shift) {
   return CGKeyCode(kVirtualKeyNotFound);
 }
 
-void ToggleKey(std::string key, std::vector<std::string> modifiers, bool down) {
+void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down) {
+  std::vector<std::string> adjustedModifiers = modifiers;
   CGKeyCode virtualKey = VirtualKey(key, false);
   if (virtualKey == kVirtualKeyNotFound) {
     virtualKey = VirtualKey(key, true);
-    if (std::find(modifiers.begin(), modifiers.end(), "shift") == modifiers.end()) {
-      modifiers.push_back("shift");
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "shift") ==
+        adjustedModifiers.end()) {
+      adjustedModifiers.push_back("shift");
     }
   }
 
@@ -127,31 +129,40 @@ void ToggleKey(std::string key, std::vector<std::string> modifiers, bool down) {
 
   CGEventSetFlags(event, 0);
   if (down) {
-    if (std::find(modifiers.begin(), modifiers.end(), "shift") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "shift") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskShift);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "control") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "control") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskControl);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "ctrl") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "ctrl") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskControl);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "alt") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "alt") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskAlternate);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "option") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "option") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskAlternate);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "command") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "command") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "cmd") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "cmd") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "function") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "function") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskSecondaryFn);
     }
-    if (std::find(modifiers.begin(), modifiers.end(), "fn") != modifiers.end()) {
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "fn") !=
+        adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskSecondaryFn);
     }
   }
@@ -160,7 +171,7 @@ void ToggleKey(std::string key, std::vector<std::string> modifiers, bool down) {
   usleep(1000);
 }
 
-void FocusApplication(std::string application) {
+void FocusApplication(const std::string& application) {
   NSString* name = [NSString stringWithCString:application.c_str()
                                       encoding:[NSString defaultCStringEncoding]]
                        .lowercaseString;
@@ -222,7 +233,7 @@ std::vector<std::string> GetRunningApplications() {
   return result;
 }
 
-void PressKey(std::string key, std::vector<std::string> modifiers) {
+void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
   ToggleKey(key, modifiers, true);
   ToggleKey(key, modifiers, false);
 }
