@@ -222,11 +222,7 @@ std::vector<std::string> GetRunningApplications() {
         [NSRunningApplication runningApplicationWithProcessIdentifier:[pid intValue]];
 
     if (app != NULL) {
-      result.push_back(
-          [[NSString stringWithFormat:@"\"%@\"", [app.bundleURL.path
-                                                     stringByReplacingOccurrencesOfString:@"\""
-                                                                               withString:@"\\\""]]
-              UTF8String]);
+      result.push_back([app.bundleURL.path UTF8String]);
     }
   }
 
