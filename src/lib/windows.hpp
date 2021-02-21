@@ -88,11 +88,13 @@ std::string ProcessName(HWND window) {
 }
 
 void ToggleKey(std::string key, bool down) {
-  // first, look for a hard-coded virtual key (e.g., for non-alphanumeric characters)
+  // first, look for a hard-coded virtual key (e.g., for non-alphanumeric
+  // characters)
   bool shift = false;
   int virtualKey = VirtualKey(key);
 
-  // if we didn't find one, then convert the key's character into a keyboard-indepdent virutal key
+  // if we didn't find one, then convert the key's character into a
+  // keyboard-indepdent virutal key
   if (virtualKey == -1) {
     // this function returns the key in the low-order byte and whether or not
     // shift is required in the high-order byte
@@ -117,12 +119,15 @@ void ToggleKey(std::string key, bool down) {
 }
 
 BOOL CALLBACK GetRunningWindows(HWND window, LPARAM data) {
-  std::vector<std::string>& result = *reinterpret_cast<std::vector<std::string>*>(data);
+  std::vector<std::string>& result =
+      *reinterpret_cast<std::vector<std::string>*>(data);
   std::string process = ProcessName(window);
 
   // some processes have windows but end in ".tmp" and should be ignored
   std::string tmp = ".tmp";
-  if (process.length() < tmp.length() || process.compare(process.length() - tmp.length(), tmp.length(), tmp) != 0) {
+  if (process.length() < tmp.length() ||
+      process.compare(process.length() - tmp.length(), tmp.length(), tmp) !=
+          0) {
     result.push_back(process);
   }
 
@@ -136,11 +141,13 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
     // ignore invisible windows
     RECT rect;
     GetWindowRect(window, &rect);
-    if (rect.top == rect.bottom || rect.left == rect.right || !IsWindowVisible(window)) {
+    if (rect.top == rect.bottom || rect.left == rect.right ||
+        !IsWindowVisible(window)) {
       return TRUE;
     }
 
-    // in order to switch window focus, the alt key needs to be pressed down, for some reason
+    // in order to switch window focus, the alt key needs to be pressed down,
+    // for some reason
     ToggleKey("alt", true);
     WINDOWPLACEMENT placement;
     GetWindowPlacement(window, &placement);
@@ -193,4 +200,3 @@ void PressKey(std::string key, std::vector<std::string> modifiers) {
 }
 
 }  // namespace driver
-

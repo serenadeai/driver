@@ -19,6 +19,11 @@
         "xcode_settings": {
           "OTHER_CFLAGS": ["-ObjC++"]
         }
+      }],
+      ['OS=="linux"', {
+        "link_settings": {
+          "libraries": ["-lX11", "-lXtst"]
+        }
       }]
     ]
   }]
