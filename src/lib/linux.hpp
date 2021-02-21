@@ -106,6 +106,7 @@ std::string ProcessName(Display* display, Window window) {
   std::string path((std::istreambuf_iterator<char>(t)),
                    std::istreambuf_iterator<char>());
 
+  XFree(pid);
   ToLower(path);
   return path;
 }
@@ -149,6 +150,7 @@ void FocusApplication(const std::string& application) {
     }
   }
 
+  XFree(windows);
   XCloseDisplay(display);
 }
 
@@ -162,6 +164,7 @@ std::string GetActiveApplication() {
   Window* window = (Window*)property;
   std::string result = ProcessName(display, *window);
 
+  XFree(window);
   XCloseDisplay(display);
   return result;
 }
@@ -185,6 +188,8 @@ std::vector<std::string> GetRunningApplications() {
 
   std::sort(result.begin(), result.end());
   result.erase(std::unique(result.begin(), result.end()), result.end());
+
+  XFree(windows);
   return result;
 }
 
