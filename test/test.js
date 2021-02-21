@@ -5,6 +5,9 @@ const run = async () => {
   console.log("Running applications:", driver.getRunningApplications().slice(0, 5));
   console.log("Installed applications:", (await driver.getInstalledApplications()).slice(0, 5));
 
+  console.log("Double clicking");
+  driver.click("left", 2);
+
   console.log('Typing "My password is Password123!"');
   driver.typeText("My password is Password123!");
 

@@ -168,7 +168,38 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
   }
 
   CGEventPost(kCGHIDEventTap, event);
+  CFRelease(source);
+  CFRelease(event);
   usleep(1000);
+}
+
+void Click(const std::string& buttonType, int count) {
+  CGEventType downEventType = buttonType == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown;
+  CGEventType upEventType = buttonType == "left" ? kCGEventLeftMouseUp : kCGEventRightMouseUp;
+  CGMouseButton button = buttonType == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight;
+
+  CGFloat y = NSEvent.mouseLocation.y;
+  if (NSScreen.mainScreen != nil) {
+    y = NSScreen.mainScreen.frame.size.height - y;
+  }
+
+  CGEventRef event =
+      CGEventCreateMouseEvent(NULL, downEventType, CGPointMake(NSEvent.mouseLocation.x, y), button);
+  CGEventPost(kCGHIDEventTap, event);
+  CGEventSetType(event, upEventType);
+  CGEventPost(kCGHIDEventTap, event);
+
+  for (int i = 0; i < count - 1; i++) {
+    CGEventSetIntegerValueField(event, kCGMouseEventClickState, i + 2);
+
+    CGEventSetType(event, downEventType);
+    CGEventPost(kCGHIDEventTap, event);
+
+    CGEventSetType(event, upEventType);
+    CGEventPost(kCGHIDEventTap, event);
+  }
+
+  CFRelease(event);
 }
 
 void FocusApplication(const std::string& application) {
@@ -232,6 +263,13 @@ std::vector<std::string> GetRunningApplications() {
 void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
   ToggleKey(key, modifiers, true);
   ToggleKey(key, modifiers, false);
+}
+
+void SetMouseLocation(int x, int y) {
+  CGEventRef event =
+      CGEventCreateMouseEvent(nil, kCGEventMouseMoved, CGPointMake(x, y), kCGMouseButtonLeft);
+  CGEventPost(kCGHIDEventTap, event);
+  CFRelease(event);
 }
 
 }  // namespace driver

@@ -4,6 +4,14 @@ const path = require("path");
 const shortcut = require("windows-shortcuts");
 const lib = require("bindings")("driver.node");
 
+exports.click = (button, count) => {
+  if (!count) {
+    count = 1;
+  }
+
+  lib.click(button, count);
+};
+
 exports.focusApplication = (app) => {
   lib.focusApplication(app);
 };
@@ -60,6 +68,10 @@ exports.pressKey = (key, modifiers) => {
   }
 
   lib.pressKey(key, modifiers);
+};
+
+exports.setMouseLocation = (x, y) => {
+  lib.setMouseLocation(x, y);
 };
 
 exports.sleep = (timeout) => {

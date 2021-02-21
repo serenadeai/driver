@@ -4,15 +4,25 @@
 
 #if __APPLE__
 #include <unistd.h>
+
 #include "lib/mac.hpp"
 #elif __linux__
 #include <X11/Xlib.h>
 #include <unistd.h>
+
 #include "lib/linux.hpp"
 #else
 #include <Windows.h>
+
 #include "lib/windows.hpp"
 #endif
+
+Napi::Value Click(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  driver::Click(info[0].As<Napi::String>().Utf8Value(),
+                info[1].As<Napi::Number>().Int32Value());
+  return env.Null();
+}
 
 Napi::Value FocusApplication(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
@@ -61,6 +71,13 @@ Napi::Value PressKey(const Napi::CallbackInfo& info) {
   return env.Null();
 }
 
+Napi::Value SetMouseLocation(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  driver::SetMouseLocation(info[0].As<Napi::Number>().Int32Value(),
+                           info[1].As<Napi::Number>().Int32Value());
+  return env.Null();
+}
+
 Napi::Value SleepMilliseconds(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 #if defined(__APPLE__) || defined(__linux__)
@@ -95,6 +112,7 @@ Napi::Value TypeText(const Napi::CallbackInfo& info) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  exports.Set(Napi::String::New(env, "click"), Napi::Function::New(env, Click));
   exports.Set(Napi::String::New(env, "focusApplication"),
               Napi::Function::New(env, FocusApplication));
   exports.Set(Napi::String::New(env, "getActiveApplication"),
@@ -103,6 +121,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, GetRunningApplications));
   exports.Set(Napi::String::New(env, "pressKey"),
               Napi::Function::New(env, PressKey));
+  exports.Set(Napi::String::New(env, "setMouseLocation"),
+              Napi::Function::New(env, SetMouseLocation));
   exports.Set(Napi::String::New(env, "sleep"),
               Napi::Function::New(env, SleepMilliseconds));
   exports.Set(Napi::String::New(env, "typeText"),
