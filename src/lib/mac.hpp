@@ -1,17 +1,207 @@
 #import <AppKit/AppKit.h>
 #import <Carbon/Carbon.h>
 #import <Foundation/Foundation.h>
+
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
 #include <vector>
 
 #define kVirtualKeyNotFound 65535
+#define kAXOpenAction CFSTR("AXOpen")
+#define kAXEnhancedUserInterfaceAttribute CFSTR("AXEnhancedUserInterface")
+#define kAXManualAccessibilityAttribute CFSTR("AXManualAccessibility")
 
 namespace driver {
 
+void ToLower(std::string& s) {
+  std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+}
+
+CFArrayRef CreateChildrenArray(AXUIElementRef element) {
+  CFIndex count;
+  AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
+
+  CFArrayRef children;
+  AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
+  return children;
+}
+
+std::string GetRoleDescription(AXUIElementRef element) {
+  CFTypeRef description = NULL;
+  AXUIElementCopyAttributeValue(element, kAXRoleDescriptionAttribute,
+                                reinterpret_cast<CFTypeRef*>(&description));
+
+  if (description == NULL) {
+    return "";
+  }
+
+  std::string result([(NSString*)description UTF8String]);
+  CFRelease(description);
+  return result;
+}
+
+std::string GetRawTitle(AXUIElementRef element) {
+  CFStringRef title = NULL;
+  AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&title));
+
+  if (title == NULL || CFGetTypeID(title) != CFStringGetTypeID()) {
+    if (title != NULL) {
+      CFRelease(title);
+    }
+
+    AXUIElementCopyAttributeValue(element, kAXTitleAttribute, reinterpret_cast<CFTypeRef*>(&title));
+  }
+
+  if (title == NULL || CFGetTypeID(title) != CFStringGetTypeID()) {
+    if (title != NULL) {
+      CFRelease(title);
+    }
+
+    return "";
+  }
+
+  std::string result([(NSString*)title UTF8String]);
+  CFRelease(title);
+  return result;
+}
+
+std::string GetTitle(AXUIElementRef element) {
+  std::string result = GetRawTitle(element);
+  if (result == "") {
+    CFArrayRef children = CreateChildrenArray(element);
+    int n = CFArrayGetCount(children);
+    for (CFIndex i = 0; i < 2 && i < n; i++) {
+      AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+      std::string inner = GetRawTitle(child);
+      if (inner != "") {
+        result = inner;
+        break;
+      }
+    }
+
+    CFRelease(children);
+  }
+
+  return result;
+}
+
+bool HasActionName(AXUIElementRef element, CFStringRef name) {
+  CFArrayRef names = NULL;
+  AXUIElementCopyActionNames(element, &names);
+  if (names == NULL) {
+    return false;
+  }
+
+  int n = CFArrayGetCount(names);
+  for (CFIndex i = 0; i < n; i++) {
+    CFStringRef child = static_cast<CFStringRef>(CFArrayGetValueAtIndex(names, i));
+    if (CFEqual(child, name)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool IsButton(AXUIElementRef element) {
+  return (GetRoleDescription(element) == "button" && GetTitle(element) != "") ||
+         HasActionName(element, kAXOpenAction);
+}
+
+void Describe(AXUIElementRef element) {
+  const char* delimiter = ",";
+  std::cout << "Title: " << GetTitle(element) << std::endl;
+  std::cout << "Role Description: " << GetRoleDescription(element) << std::endl;
+
+  CFArrayRef attributes = NULL;
+  AXUIElementCopyAttributeNames(element, &attributes);
+  if (attributes != NULL) {
+    int attributesCount = CFArrayGetCount(attributes);
+    std::vector<std::string> attributeStrings;
+    for (CFIndex i = 0; i < attributesCount; i++) {
+      CFStringRef e = static_cast<CFStringRef>(CFArrayGetValueAtIndex(attributes, i));
+      attributeStrings.push_back([(NSString*)e UTF8String]);
+    }
+
+    std::ostringstream joinedAttributes;
+    std::copy(attributeStrings.begin(), attributeStrings.end(),
+              std::ostream_iterator<std::string>(joinedAttributes, delimiter));
+    std::cout << "Attributes: " << joinedAttributes.str() << std::endl;
+    CFRelease(attributes);
+  }
+
+  CFArrayRef actionNames = NULL;
+  AXUIElementCopyActionNames(element, &actionNames);
+  if (actionNames != NULL) {
+    int actionNamesCount = CFArrayGetCount(actionNames);
+    std::vector<std::string> actionNameStrings;
+    for (CFIndex i = 0; i < actionNamesCount; i++) {
+      CFStringRef e = static_cast<CFStringRef>(CFArrayGetValueAtIndex(actionNames, i));
+      actionNameStrings.push_back([(NSString*)e UTF8String]);
+    }
+
+    std::ostringstream joinedActionNames;
+    std::copy(actionNameStrings.begin(), actionNameStrings.end(),
+              std::ostream_iterator<std::string>(joinedActionNames, delimiter));
+    std::cout << "Action names: " << joinedActionNames.str() << std::endl;
+    CFRelease(actionNames);
+  }
+
+  std::cout << std::endl;
+}
+
+AXUIElementRef CreateActiveWindowRef() {
+  NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
+  if (running == NULL) {
+    return NULL;
+  }
+
+  AXUIElementRef app = AXUIElementCreateApplication(running.processIdentifier);
+  AXUIElementRef window = NULL;
+  AXUIElementCopyAttributeValue(app, kAXFocusedWindowAttribute,
+                                reinterpret_cast<CFTypeRef*>(&window));
+  if (window == NULL) {
+    return NULL;
+  }
+
+  CFRelease(app);
+  return static_cast<AXUIElementRef>(window);
+}
+
+AXUIElementRef CreateActiveTextFieldRef() {
+  NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
+  if (running == NULL) {
+    return NULL;
+  }
+
+  AXUIElementRef app = AXUIElementCreateApplication(running.processIdentifier);
+  CFBooleanRef value = kCFBooleanTrue;
+  AXUIElementSetAttributeValue(app, kAXManualAccessibilityAttribute, value);
+
+  AXUIElementRef field = NULL;
+  AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute,
+                                reinterpret_cast<CFTypeRef*>(&field));
+  CFRelease(app);
+  if (field == NULL) {
+    return NULL;
+  }
+
+  std::string role = GetRoleDescription(field);
+  if (role == "text field" || role == "text entry area") {
+    return field;
+  }
+
+  return NULL;
+}
+
 std::string KeyCodeToString(int keyCode, bool shift) {
   TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
-  CFDataRef layoutData =
-      (CFDataRef)TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData);
-  const UCKeyboardLayout* keyboardLayout = (const UCKeyboardLayout*)CFDataGetBytePtr(layoutData);
+  CFDataRef layoutData = static_cast<CFDataRef>(
+      TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData));
+  const UCKeyboardLayout* keyboardLayout =
+      reinterpret_cast<const UCKeyboardLayout*>(CFDataGetBytePtr(layoutData));
 
   UInt32 keysDown = 0;
   UniChar chars[4];
@@ -22,7 +212,10 @@ std::string KeyCodeToString(int keyCode, bool shift) {
                  &realLength, chars);
 
   CFRelease(currentKeyboard);
-  return [(NSString*)CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1) UTF8String];
+  NSString* s = static_cast<NSString*>(CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1));
+  std::string result([s UTF8String]);
+  CFRelease(s);
+  return result;
 }
 
 CGKeyCode VirtualKey(const std::string& key, bool shift) {
@@ -202,6 +395,48 @@ void Click(const std::string& buttonType, int count) {
   CFRelease(event);
 }
 
+bool ClickButton(AXUIElementRef element, const std::string& button) {
+  CFArrayRef children = CreateChildrenArray(element);
+  int n = CFArrayGetCount(children);
+  for (CFIndex i = 0; i < 20 && i < n; i++) {
+    AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+    std::string title = GetTitle(child);
+    ToLower(title);
+    if (IsButton(child)) {
+      if (title == button) {
+        if (HasActionName(child, kAXPressAction)) {
+          AXUIElementPerformAction(child, kAXPressAction);
+          CFRelease(children);
+          return true;
+        } else if (HasActionName(child, kAXOpenAction)) {
+          AXUIElementPerformAction(child, kAXOpenAction);
+          CFRelease(children);
+          return true;
+        }
+      }
+    } else {
+      if (ClickButton(child, button)) {
+        CFRelease(children);
+        return true;
+      }
+    }
+  }
+
+  CFRelease(children);
+  return false;
+}
+
+void ClickButton(const std::string& button) {
+  AXUIElementRef window = CreateActiveWindowRef();
+  if (window == NULL) {
+    return;
+  }
+
+  std::string name = button;
+  ToLower(name);
+  ClickButton(window, name);
+}
+
 void FocusApplication(const std::string& application) {
   NSString* name = [NSString stringWithCString:application.c_str()
                                       encoding:[NSString defaultCStringEncoding]]
@@ -229,13 +464,82 @@ void FocusApplication(const std::string& application) {
 }
 
 std::string GetActiveApplication() {
-  NSRunningApplication* app = [NSWorkspace sharedWorkspace].frontmostApplication;
-  if (app == NULL) {
+  NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
+  if (running == NULL) {
     return "";
   }
 
-  return
-      [[NSString stringWithFormat:@"%@ %@", app.bundleURL.path, app.bundleIdentifier] UTF8String];
+  if (AXIsProcessTrustedWithOptions(NULL)) {
+    AXUIElementRef window = CreateActiveWindowRef();
+    if (window != NULL) {
+      std::string description = GetRoleDescription(static_cast<AXUIElementRef>(window));
+      CFRelease(window);
+      if (description == "dialog" || description == "sheet") {
+        return "system dialog";
+      }
+    }
+  }
+
+  return [[NSString stringWithFormat:@"%@ %@", running.bundleURL.path, running.bundleIdentifier]
+      UTF8String];
+}
+
+void GetClickableButtons(AXUIElementRef element, std::vector<std::string>& result) {
+  CFArrayRef children = CreateChildrenArray(element);
+  int n = CFArrayGetCount(children);
+  for (CFIndex i = 0; i < 20 && i < n; i++) {
+    AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+    if (IsButton(child)) {
+      std::string title = GetTitle(child);
+      ToLower(title);
+      result.push_back(title);
+    } else {
+      GetClickableButtons(child, result);
+    }
+  }
+
+  CFRelease(children);
+}
+
+std::vector<std::string> GetClickableButtons() {
+  std::vector<std::string> buttons;
+  AXUIElementRef window = CreateActiveWindowRef();
+  GetClickableButtons(window, buttons);
+  CFRelease(window);
+  return buttons;
+}
+
+int GetEditorCursor() {
+  AXUIElementRef field = CreateActiveTextFieldRef();
+  if (field == NULL) {
+    return 0;
+  }
+
+  AXValueRef value = NULL;
+  AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
+                                reinterpret_cast<CFTypeRef*>(&value));
+  if (value == NULL) {
+    CFRelease(field);
+    return 0;
+  }
+
+  CFRange range;
+  AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
+  int result = range.location + range.length;
+  CFRelease(field);
+  CFRelease(value);
+  return result;
+}
+
+std::string GetEditorSource() {
+  AXUIElementRef field = CreateActiveTextFieldRef();
+  if (field == NULL) {
+    return "";
+  }
+
+  std::string title = GetTitle(field);
+  CFRelease(field);
+  return title;
 }
 
 std::vector<std::string> GetRunningApplications() {
@@ -263,6 +567,36 @@ std::vector<std::string> GetRunningApplications() {
 void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
   ToggleKey(key, modifiers, true);
   ToggleKey(key, modifiers, false);
+}
+
+void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
+  AXUIElementRef field = CreateActiveTextFieldRef();
+  if (field == NULL) {
+    return;
+  }
+
+  CFStringRef sourceValue = CFStringCreateWithCString(NULL, source.c_str(), kCFStringEncodingUTF8);
+  CFTypeRef value = NULL;
+  AXUIElementCopyAttributeValue(field, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
+  if (value != NULL) {
+    CFRelease(value);
+    AXUIElementSetAttributeValue(field, kAXValueAttribute, sourceValue);
+  } else {
+    AXUIElementSetAttributeValue(field, kAXTitleAttribute, sourceValue);
+  }
+
+  int length = 0;
+  if (cursorEnd > 0) {
+    length = cursorEnd - cursor;
+  }
+
+  CFRange range = CFRangeMake(cursor, length);
+  AXValueRef rangeValue = AXValueCreate(static_cast<AXValueType>(kAXValueCFRangeType), &range);
+  AXUIElementSetAttributeValue(field, kAXSelectedTextRangeAttribute, rangeValue);
+
+  CFRelease(field);
+  CFRelease(sourceValue);
+  CFRelease(rangeValue);
 }
 
 void SetMouseLocation(int x, int y) {

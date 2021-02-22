@@ -24,6 +24,16 @@ Napi::Value Click(const Napi::CallbackInfo& info) {
   return env.Null();
 }
 
+Napi::Value ClickButton(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+#ifdef __APPLE__
+  driver::ClickButton(info[0].As<Napi::String>().Utf8Value());
+#endif
+
+  return env.Null();
+}
+
 Napi::Value FocusApplication(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   driver::FocusApplication(info[0].As<Napi::String>().Utf8Value());
@@ -32,6 +42,36 @@ Napi::Value FocusApplication(const Napi::CallbackInfo& info) {
 
 Napi::Value GetActiveApplication(const Napi::CallbackInfo& info) {
   return Napi::String::New(info.Env(), driver::GetActiveApplication());
+}
+
+Napi::Value GetClickableButtons(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+#ifdef __APPLE__
+  std::vector<std::string> clickable = driver::GetClickableButtons();
+  Napi::Array result = Napi::Array::New(env, clickable.size());
+  for (size_t i = 0; i < clickable.size(); i++) {
+    result[i] = clickable[i];
+  }
+
+  return result;
+#else
+  Napi::Array result = Napi::Array::New(env, 0);
+  return result;
+#endif
+}
+
+Napi::Value GetEditorState(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+#ifdef __APPLE__
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("source", driver::GetEditorSource());
+  result.Set("cursor", driver::GetEditorCursor());
+  return result;
+#else
+  return env.Null();
+#endif
 }
 
 Napi::Array GetRunningApplications(const Napi::CallbackInfo& info) {
@@ -67,6 +107,18 @@ Napi::Value PressKey(const Napi::CallbackInfo& info) {
 #ifdef __linux__
   XCloseDisplay(display);
   usleep(100000);
+#endif
+
+  return env.Null();
+}
+
+Napi::Value SetEditorState(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+#ifdef __APPLE__
+  driver::SetEditorState(info[0].As<Napi::String>().Utf8Value(),
+                         info[1].As<Napi::Number>().Int32Value(),
+                         info[2].As<Napi::Number>().Int32Value());
 #endif
 
   return env.Null();
@@ -114,14 +166,22 @@ Napi::Value TypeText(const Napi::CallbackInfo& info) {
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "click"), Napi::Function::New(env, Click));
+  exports.Set(Napi::String::New(env, "clickButton"),
+              Napi::Function::New(env, ClickButton));
   exports.Set(Napi::String::New(env, "focusApplication"),
               Napi::Function::New(env, FocusApplication));
   exports.Set(Napi::String::New(env, "getActiveApplication"),
               Napi::Function::New(env, GetActiveApplication));
+  exports.Set(Napi::String::New(env, "getClickableButtons"),
+              Napi::Function::New(env, GetClickableButtons));
+  exports.Set(Napi::String::New(env, "getEditorState"),
+              Napi::Function::New(env, GetEditorState));
   exports.Set(Napi::String::New(env, "getRunningApplications"),
               Napi::Function::New(env, GetRunningApplications));
   exports.Set(Napi::String::New(env, "pressKey"),
               Napi::Function::New(env, PressKey));
+  exports.Set(Napi::String::New(env, "setEditorState"),
+              Napi::Function::New(env, SetEditorState));
   exports.Set(Napi::String::New(env, "setMouseLocation"),
               Napi::Function::New(env, SetMouseLocation));
   exports.Set(Napi::String::New(env, "sleep"),

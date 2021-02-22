@@ -5,11 +5,23 @@ const shortcut = require("windows-shortcuts");
 const lib = require("bindings")("driver.node");
 
 exports.click = (button, count) => {
+  if (!button) {
+    button = "left";
+  }
+
   if (!count) {
     count = 1;
   }
 
   lib.click(button, count);
+};
+
+exports.clickButton = (button) => {
+  lib.clickButton(button);
+};
+
+exports.doubleClick = (button) => {
+  return exports.click(button, 2);
 };
 
 exports.focusApplication = (app) => {
@@ -18,6 +30,14 @@ exports.focusApplication = (app) => {
 
 exports.getActiveApplication = () => {
   return lib.getActiveApplication();
+};
+
+exports.getClickableButtons = () => {
+  return lib.getClickableButtons();
+};
+
+exports.getEditorState = () => {
+  return lib.getEditorState();
 };
 
 exports.getInstalledApplications = async () => {
@@ -70,7 +90,23 @@ exports.pressKey = (key, modifiers) => {
   lib.pressKey(key, modifiers);
 };
 
+exports.setEditorState = (source, cursor, cursorEnd) => {
+  if (!cursorEnd) {
+    cursorEnd = 0;
+  }
+
+  lib.setEditorState(source, cursor, cursorEnd);
+};
+
 exports.setMouseLocation = (x, y) => {
+  if (x < 0) {
+    x = 0;
+  }
+
+  if (y < 0) {
+    y = 0;
+  }
+
   lib.setMouseLocation(x, y);
 };
 
