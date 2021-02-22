@@ -1,7 +1,7 @@
+#include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
-#include <X11/keysym.h>
 #include <unistd.h>
 #include <algorithm>
 #include <cctype>
@@ -12,72 +12,162 @@
 
 namespace driver {
 
-unsigned long GetKeySym(Display* display, const std::string& key) {
-  if (key == "left") {
-    return XK_Left;
-  } else if (key == "right") {
-    return XK_Right;
-  } else if (key == "up") {
-    return XK_Up;
-  } else if (key == "down") {
-    return XK_Down;
+void GetKeycode(Display* display, const std::string& key, int* keycode,
+                bool* shift) {
+  // convert our key names to the corresponding x11 key
+  std::string mapped = key;
+  if (key == "Escape") {
+    mapped = "escape";
   } else if (key == "control" || key == "ctrl") {
-    return XK_Control_L;
+    mapped = "Control_L";
   } else if (key == "alt") {
-    return XK_Alt_L;
-  } else if (key == "end") {
-    return XK_End;
-  } else if (key == "pageup") {
-    return XK_Page_Up;
-  } else if (key == "pagedown") {
-    return XK_Page_Down;
-  } else if (key == "enter" || key == "return") {
-    return XK_Return;
-  } else if (key == "delete") {
-    return XK_Delete;
-  } else if (key == "home") {
-    return XK_Home;
-  } else if (key == "escape") {
-    return XK_Escape;
-  } else if (key == "backspace") {
-    return XK_BackSpace;
+    mapped = "Alt_L";
   } else if (key == "meta" || key == "windows" || key == "win") {
-    return XK_Meta_L;
-  } else if (key == "caps") {
-    return XK_Caps_Lock;
+    mapped = "Super_L";
   } else if (key == "shift") {
-    return XK_Shift_L;
+    mapped = "Shift_L";
+  } else if (key == "`") {
+    mapped = "grave";
+  } else if (key == "~") {
+    mapped = "asciitilde";
+  } else if (key == "!") {
+    mapped = "exclam";
+  } else if (key == "@") {
+    mapped = "at";
+  } else if (key == "#") {
+    mapped = "numbersign";
+  } else if (key == "$") {
+    mapped = "dollar";
+  } else if (key == "%") {
+    mapped = "percent";
+  } else if (key == "^") {
+    mapped = "asciicircum";
+  } else if (key == "&") {
+    mapped = "ampersand";
+  } else if (key == "*") {
+    mapped = "asterisk";
+  } else if (key == "(") {
+    mapped = "parenleft";
+  } else if (key == ")") {
+    mapped = "parenright";
+  } else if (key == "-") {
+    mapped = "minus";
+  } else if (key == "_") {
+    mapped = "underscore";
+  } else if (key == "+") {
+    mapped = "plus";
+  } else if (key == "=") {
+    mapped = "equal";
+  } else if (key == "backspace") {
+    mapped = "BackSpace";
   } else if (key == "tab") {
-    return XK_Tab;
-  } else if (key == "space") {
-    return XK_space;
+    mapped = "Tab";
+  } else if (key == "[") {
+    mapped = "bracketleft";
+  } else if (key == "{") {
+    mapped = "braceleft";
+  } else if (key == "]") {
+    mapped = "bracketright";
+  } else if (key == "}") {
+    mapped = "braceright";
+  } else if (key == "\\") {
+    mapped = "backslash";
+  } else if (key == "|") {
+    mapped = "bar";
+  } else if (key == "caps") {
+    mapped = "Caps_Lock";
+  } else if (key == ";") {
+    mapped = "semicolon";
+  } else if (key == ":") {
+    mapped = "colon";
+  } else if (key == "'") {
+    mapped = "apostrophe";
+  } else if (key == "\"") {
+    mapped = "quotedbl";
+  } else if (key == "enter" || key == "return") {
+    mapped = "Return";
+  } else if (key == ",") {
+    mapped = "comma";
+  } else if (key == "<") {
+    mapped = "less";
+  } else if (key == ".") {
+    mapped = "period";
+  } else if (key == ">") {
+    mapped = "greater";
+  } else if (key == "/") {
+    mapped = "slash";
+  } else if (key == "?") {
+    mapped = "question";
+  } else if (key == " ") {
+    mapped = "space";
+  } else if (key == "home") {
+    mapped = "Home";
+  } else if (key == "end") {
+    mapped = "End";
+  } else if (key == "left") {
+    mapped = "Left";
+  } else if (key == "right") {
+    mapped = "Right";
+  } else if (key == "up") {
+    mapped = "Up";
+  } else if (key == "down") {
+    mapped = "Down";
+  } else if (key == "pageup") {
+    mapped = "Prior";
+  } else if (key == "pagedown") {
+    mapped = "Next";
+  } else if (key == "delete") {
+    mapped = "Delete";
   } else if (key == "f1") {
-    return XK_F1;
+    mapped = "F1";
   } else if (key == "f2") {
-    return XK_F2;
+    mapped = "F2";
   } else if (key == "f3") {
-    return XK_F3;
+    mapped = "F3";
   } else if (key == "f4") {
-    return XK_F4;
+    mapped = "F4";
   } else if (key == "f5") {
-    return XK_F5;
+    mapped = "F5";
   } else if (key == "f6") {
-    return XK_F6;
+    mapped = "F6";
   } else if (key == "f7") {
-    return XK_F7;
+    mapped = "F7";
   } else if (key == "f8") {
-    return XK_F8;
+    mapped = "F8";
   } else if (key == "f9") {
-    return XK_F9;
+    mapped = "F9";
   } else if (key == "f10") {
-    return XK_F10;
+    mapped = "F10";
   } else if (key == "f11") {
-    return XK_F11;
+    mapped = "F11";
   } else if (key == "f12") {
-    return XK_F12;
+    mapped = "F12";
   }
 
-  return (KeySym)key[0];
+  // search the printable ASCII table range for the string that would be typed
+  // with the given keysym and shift modifier combination. because keycodes
+  // refer to physical keys, we need to handle the state of the shift key
+  // ourselves, and we also need to make sure we're using the current keyboard
+  // layout, not just assuming en_US
+  XkbStateRec state;
+  XkbGetState(display, XkbUseCoreKbd, &state);
+  for (int i = 0; i < 256; i++) {
+    for (int modifier = 0; modifier < 2; modifier++) {
+      KeySym k;
+      XkbLookupKeySym(display, i, (state.group << 13) | modifier, NULL, &k);
+      const char* s = XKeysymToString(k);
+      if (s == NULL) {
+        continue;
+      }
+
+      std::string name(s);
+      if (mapped == name) {
+        *keycode = i;
+        *shift = modifier == 1;
+        return;
+      }
+    }
+  }
 }
 
 void ToLower(std::string& s) {
@@ -112,8 +202,14 @@ std::string ProcessName(Display* display, Window window) {
 }
 
 void ToggleKey(Display* display, const std::string& key, bool down) {
-  XTestFakeKeyEvent(display, XKeysymToKeycode(display, GetKeySym(display, key)),
-                    down, CurrentTime);
+  int keycode = -1;
+  bool shift = false;
+  GetKeycode(display, key, &keycode, &shift);
+  if (keycode == -1) {
+    return;
+  }
+
+  XTestFakeKeyEvent(display, keycode, down, CurrentTime);
   XFlush(display);
 }
 
@@ -215,24 +311,11 @@ std::vector<std::string> GetRunningApplications() {
 
 void PressKey(Display* display, std::string key,
               std::vector<std::string> modifiers) {
+  int keycode = -1;
   bool shift = false;
-  unsigned long keysym = GetKeySym(display, key);
-
-  // keycodes only refer to physical keys, so we need to determine whether or
-  // not we need to hit the shift key manually. to do so, we see what character
-  // would be typed if we use the same keycode with the shift key also pressed,
-  // and if that matches the desired key, then we know we need to press shift
-  XKeyPressedEvent event;
-  event.type = KeyPress;
-  event.display = display;
-  event.keycode = XKeysymToKeycode(display, keysym);
-  event.state = ShiftMask;
-
-  char buffer[32];
-  KeySym ignore;
-  XLookupString(&event, buffer, 32, &ignore, 0);
-  if (key == buffer) {
-    shift = true;
+  GetKeycode(display, key, &keycode, &shift);
+  if (keycode == -1) {
+    return;
   }
 
   if (shift) {

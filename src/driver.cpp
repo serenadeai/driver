@@ -66,6 +66,7 @@ Napi::Value PressKey(const Napi::CallbackInfo& info) {
 
 #ifdef __linux__
   XCloseDisplay(display);
+  usleep(100000);
 #endif
 
   return env.Null();

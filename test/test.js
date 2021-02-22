@@ -9,7 +9,7 @@ const run = async () => {
   driver.click("left", 2);
 
   console.log("Setting mouse location");
-  driver.setMouseLocation(100, 100);
+  driver.setMouseLocation(200, 200);
 
   console.log('Typing "My password is Password123!"');
   driver.typeText("My password is Password123!");
