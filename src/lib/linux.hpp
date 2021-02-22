@@ -117,6 +117,26 @@ void ToggleKey(Display* display, const std::string& key, bool down) {
   XFlush(display);
 }
 
+void Click(const std::string& buttonType, int count) {
+  Display* display = XOpenDisplay(NULL);
+  int button = Button1;
+  if (buttonType == "middle") {
+    button = Button2;
+  } else if (buttonType == "right") {
+    button = Button3;
+  }
+
+  for (int i = 0; i < count; i++) {
+    XTestFakeButtonEvent(display, button, true, 0);
+    XFlush(display);
+    usleep(10000);
+    XTestFakeButtonEvent(display, button, false, 0);
+    XFlush(display);
+  }
+
+  XCloseDisplay(display);
+}
+
 void FocusApplication(const std::string& application) {
   std::string lower = application;
   ToLower(lower);
@@ -233,6 +253,12 @@ void PressKey(Display* display, std::string key,
   if (shift) {
     ToggleKey(display, "shift", false);
   }
+}
+
+void SetMouseLocation(int x, int y) {
+  Display* display = XOpenDisplay(NULL);
+  XWarpPointer(display, None, XDefaultRootWindow(display), 0, 0, 0, 0, x, y);
+  XCloseDisplay(display);
 }
 
 }  // namespace driver
