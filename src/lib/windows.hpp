@@ -8,7 +8,7 @@
 
 namespace driver {
 
-int VirtualKey(std::string key) {
+int VirtualKey(const std::string& key) {
   if (key == "left") {
     return VK_LEFT;
   } else if (key == "right") {
@@ -87,7 +87,7 @@ std::string ProcessName(HWND window) {
   return std::string(wide.begin(), wide.end());
 }
 
-void ToggleKey(std::string key, bool down) {
+void ToggleKey(const std::string& key, bool down) {
   // first, look for a hard-coded virtual key (e.g., for non-alphanumeric
   // characters)
   bool shift = false;
@@ -115,6 +115,21 @@ void ToggleKey(std::string key, bool down) {
 
   if (shift) {
     ToggleKey("shift", false);
+  }
+}
+
+void Click(const std::string& buttonType, int count) {
+  for (int i = 0; i < count; i++) {
+    if (buttonType == "right") {
+      mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
+      mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+    } else if (buttonType == "middle") {
+      mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
+      mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
+    } else {
+      mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+      mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+    }
   }
 }
 
@@ -168,7 +183,7 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
   return TRUE;
 }
 
-void FocusApplication(std::string application) {
+void FocusApplication(const std::string& application) {
   EnumWindows(FocusWindow, reinterpret_cast<LPARAM>(&application));
 }
 
@@ -186,7 +201,7 @@ std::vector<std::string> GetRunningApplications() {
   return result;
 }
 
-void PressKey(std::string key, std::vector<std::string> modifiers) {
+void PressKey(const std::string& key, std::vector<std::string> modifiers) {
   for (std::string modifier : modifiers) {
     ToggleKey(modifier, true);
   }
@@ -197,6 +212,10 @@ void PressKey(std::string key, std::vector<std::string> modifiers) {
   for (std::string modifier : modifiers) {
     ToggleKey(modifier, false);
   }
+}
+
+void SetMouseLocation(int x, int y) {
+  SetCursorPos(x, y);
 }
 
 }  // namespace driver
