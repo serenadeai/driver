@@ -1,5 +1,5 @@
 {
-  "name": "driver",
+  "name": "serenade-driver",
   "version": "1.0.0",
   "description": "A library for cross-platform system automations.",
   "main": "index.js",

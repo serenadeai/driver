@@ -1,2 +1,7 @@
+bin
 build
 node_modules
+9*
+10*
+11*
+*.log

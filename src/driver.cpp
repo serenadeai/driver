@@ -2,19 +2,27 @@
 
 #include <vector>
 
+#include "driver.hpp"
+
 #if __APPLE__
+
 #include <unistd.h>
 
-#include "lib/mac.hpp"
+#include "mac.hpp"
+
 #elif __linux__
+
 #include <X11/Xlib.h>
 #include <unistd.h>
 
-#include "lib/linux.hpp"
+#include "linux.hpp"
+
 #else
+
 #include <Windows.h>
 
-#include "lib/windows.hpp"
+#include "windows.hpp"
+
 #endif
 
 Napi::Value Click(const Napi::CallbackInfo& info) {

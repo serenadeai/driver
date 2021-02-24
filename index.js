@@ -2,7 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const shortcut = require("windows-shortcuts");
-const lib = require("bindings")("driver.node");
+const lib = require("bindings")("serenade-driver.node");
 
 exports.click = (button, count) => {
   if (!button) {

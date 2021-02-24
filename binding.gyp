@@ -1,6 +1,6 @@
 {
   "targets": [{
-    "target_name": "driver",
+    "target_name": "serenade-driver",
     "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS"],
     "sources": ["src/driver.cpp"],
     "include_dirs": [
@@ -8,6 +8,7 @@
     ],
     "conditions": [
       ['OS=="mac"', {
+        "sources": ["src/driver.cpp", "src/mac.cpp"],
         "link_settings": {
           "libraries": [
             "/System/Library/Frameworks/AppKit.framework",
@@ -20,7 +21,11 @@
           "OTHER_CFLAGS": ["-ObjC++"]
         }
       }],
+      ['OS=="win"', {
+        "sources": ["src/driver.cpp", "src/windows.cpp"],
+      }],
       ['OS=="linux"', {
+        "sources": ["src/driver.cpp", "src/linux.cpp"],
         "link_settings": {
           "libraries": ["-lX11", "-lXtst"]
         }

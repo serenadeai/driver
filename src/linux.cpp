@@ -3,6 +3,7 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/XTest.h>
 #include <unistd.h>
+
 #include <algorithm>
 #include <cctype>
 #include <fstream>
@@ -10,14 +11,88 @@
 #include <string>
 #include <vector>
 
+#include "linux.hpp"
+
 namespace driver {
+
+void Click(const std::string& buttonType, int count) {
+  Display* display = XOpenDisplay(NULL);
+  int button = Button1;
+  if (buttonType == "middle") {
+    button = Button2;
+  } else if (buttonType == "right") {
+    button = Button3;
+  }
+
+  for (int i = 0; i < count; i++) {
+    XTestFakeButtonEvent(display, button, true, 0);
+    XFlush(display);
+    usleep(10000);
+    XTestFakeButtonEvent(display, button, false, 0);
+    XFlush(display);
+  }
+
+  XCloseDisplay(display);
+}
+
+void FocusApplication(const std::string& application) {
+  std::string lower = application;
+  ToLower(lower);
+
+  Display* display = XOpenDisplay(NULL);
+  Window root = XDefaultRootWindow(display);
+
+  unsigned long length = 0;
+  unsigned char* property = 0;
+  GetProperty(display, root, "_NET_CLIENT_LIST", &property, &length);
+
+  Window* windows = (Window*)property;
+  for (unsigned long i = 0; i < length; i++) {
+    Window window = windows[i];
+    std::string name = ProcessName(display, window);
+    if (name.find(application) != std::string::npos) {
+      XClientMessageEvent event;
+      event.type = ClientMessage;
+      event.display = display;
+      event.window = window;
+      event.message_type =
+          XInternAtom(display, std::string("_NET_ACTIVE_WINDOW").c_str(), 1);
+      event.format = 32;
+      event.data.l[0] = 1;
+      event.data.l[1] = CurrentTime;
+
+      Window root = XDefaultRootWindow(display);
+      XSendEvent(display, root, 0,
+                 SubstructureRedirectMask | SubstructureNotifyMask,
+                 (XEvent*)&event);
+    }
+  }
+
+  XFree(windows);
+  XCloseDisplay(display);
+}
+
+std::string GetActiveApplication() {
+  Display* display = XOpenDisplay(NULL);
+  Window root = XDefaultRootWindow(display);
+  unsigned long length = 0;
+  unsigned char* property = 0;
+  GetProperty(display, root, "_NET_ACTIVE_WINDOW", &property, &length);
+
+  Window* window = (Window*)property;
+  std::string result = ProcessName(display, *window);
+
+  XFree(window);
+  XCloseDisplay(display);
+  return result;
+}
 
 void GetKeycode(Display* display, const std::string& key, int* keycode,
                 bool* shift) {
   // convert our key names to the corresponding x11 key
   std::string mapped = key;
-  if (key == "Escape") {
-    mapped = "escape";
+  if (key == "escape") {
+    mapped = "Escape";
   } else if (key == "control" || key == "ctrl") {
     mapped = "Control_L";
   } else if (key == "alt") {
@@ -170,11 +245,6 @@ void GetKeycode(Display* display, const std::string& key, int* keycode,
   }
 }
 
-void ToLower(std::string& s) {
-  std::transform(s.begin(), s.end(), s.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
-}
-
 void GetProperty(Display* display, Window window, const std::string& property,
                  unsigned char** result, unsigned long* length) {
   Atom atom = XInternAtom(display, property.c_str(), 1);
@@ -183,106 +253,6 @@ void GetProperty(Display* display, Window window, const std::string& property,
   unsigned long bytes_after = 0;
   XGetWindowProperty(display, window, atom, 0, 1024, 0, 0, &actual_type,
                      &actual_format, length, &bytes_after, result);
-}
-
-std::string ProcessName(Display* display, Window window) {
-  unsigned long length = 0;
-  unsigned char* property = 0;
-  GetProperty(display, window, "_NET_WM_PID", &property, &length);
-
-  unsigned long* pid = (unsigned long*)property;
-  std::ifstream t(std::string("/proc/") + std::to_string(*pid) +
-                  std::string("/cmdline"));
-  std::string path((std::istreambuf_iterator<char>(t)),
-                   std::istreambuf_iterator<char>());
-
-  XFree(pid);
-  ToLower(path);
-  return path;
-}
-
-void ToggleKey(Display* display, const std::string& key, bool down) {
-  int keycode = -1;
-  bool shift = false;
-  GetKeycode(display, key, &keycode, &shift);
-  if (keycode == -1) {
-    return;
-  }
-
-  XTestFakeKeyEvent(display, keycode, down, CurrentTime);
-  XFlush(display);
-}
-
-void Click(const std::string& buttonType, int count) {
-  Display* display = XOpenDisplay(NULL);
-  int button = Button1;
-  if (buttonType == "middle") {
-    button = Button2;
-  } else if (buttonType == "right") {
-    button = Button3;
-  }
-
-  for (int i = 0; i < count; i++) {
-    XTestFakeButtonEvent(display, button, true, 0);
-    XFlush(display);
-    usleep(10000);
-    XTestFakeButtonEvent(display, button, false, 0);
-    XFlush(display);
-  }
-
-  XCloseDisplay(display);
-}
-
-void FocusApplication(const std::string& application) {
-  std::string lower = application;
-  ToLower(lower);
-
-  Display* display = XOpenDisplay(NULL);
-  Window root = XDefaultRootWindow(display);
-
-  unsigned long length = 0;
-  unsigned char* property = 0;
-  GetProperty(display, root, "_NET_CLIENT_LIST", &property, &length);
-
-  Window* windows = (Window*)property;
-  for (unsigned long i = 0; i < length; i++) {
-    Window window = windows[i];
-    std::string name = ProcessName(display, window);
-    if (name.find(application) != std::string::npos) {
-      XClientMessageEvent event;
-      event.type = ClientMessage;
-      event.display = display;
-      event.window = window;
-      event.message_type =
-          XInternAtom(display, std::string("_NET_ACTIVE_WINDOW").c_str(), 1);
-      event.format = 32;
-      event.data.l[0] = 1;
-      event.data.l[1] = CurrentTime;
-
-      Window root = XDefaultRootWindow(display);
-      XSendEvent(display, root, 0,
-                 SubstructureRedirectMask | SubstructureNotifyMask,
-                 (XEvent*)&event);
-    }
-  }
-
-  XFree(windows);
-  XCloseDisplay(display);
-}
-
-std::string GetActiveApplication() {
-  Display* display = XOpenDisplay(NULL);
-  Window root = XDefaultRootWindow(display);
-  unsigned long length = 0;
-  unsigned char* property = 0;
-  GetProperty(display, root, "_NET_ACTIVE_WINDOW", &property, &length);
-
-  Window* window = (Window*)property;
-  std::string result = ProcessName(display, *window);
-
-  XFree(window);
-  XCloseDisplay(display);
-  return result;
 }
 
 std::vector<std::string> GetRunningApplications() {
@@ -338,10 +308,43 @@ void PressKey(Display* display, std::string key,
   }
 }
 
+std::string ProcessName(Display* display, Window window) {
+  unsigned long length = 0;
+  unsigned char* property = 0;
+  GetProperty(display, window, "_NET_WM_PID", &property, &length);
+
+  unsigned long* pid = (unsigned long*)property;
+  std::ifstream t(std::string("/proc/") + std::to_string(*pid) +
+                  std::string("/cmdline"));
+  std::string path((std::istreambuf_iterator<char>(t)),
+                   std::istreambuf_iterator<char>());
+
+  XFree(pid);
+  ToLower(path);
+  return path;
+}
+
 void SetMouseLocation(int x, int y) {
   Display* display = XOpenDisplay(NULL);
   XWarpPointer(display, None, XDefaultRootWindow(display), 0, 0, 0, 0, x, y);
   XCloseDisplay(display);
+}
+
+void ToggleKey(Display* display, const std::string& key, bool down) {
+  int keycode = -1;
+  bool shift = false;
+  GetKeycode(display, key, &keycode, &shift);
+  if (keycode == -1) {
+    return;
+  }
+
+  XTestFakeKeyEvent(display, keycode, down, CurrentTime);
+  XFlush(display);
+}
+
+void ToLower(std::string& s) {
+  std::transform(s.begin(), s.end(), s.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
 }
 
 }  // namespace driver
