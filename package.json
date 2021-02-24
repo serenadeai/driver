@@ -7,6 +7,9 @@
   "author": "Serenade",
   "license": "MIT",
   "gypfile": true,
+  "scripts": {
+    "clean": "rm -rf 9* 10* 11* dist build bin"
+  },
   "dependencies": {
     "bindings": "^1.5.0",
     "node-addon-api": "^3.1.0",
