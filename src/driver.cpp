@@ -6,8 +6,6 @@
 
 #if __APPLE__
 
-#include <unistd.h>
-
 #include "mac.hpp"
 
 #elif __linux__
@@ -18,8 +16,6 @@
 #include "linux.hpp"
 
 #else
-
-#include <Windows.h>
 
 #include "windows.hpp"
 
@@ -139,16 +135,6 @@ Napi::Value SetMouseLocation(const Napi::CallbackInfo& info) {
   return env.Null();
 }
 
-Napi::Value SleepMilliseconds(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();
-#if defined(__APPLE__) || defined(__linux__)
-  usleep(1000 * info[0].As<Napi::Number>().Int32Value());
-#else
-  Sleep(info[0].As<Napi::Number>().Int32Value());
-#endif
-  return env.Null();
-}
-
 Napi::Value TypeText(const Napi::CallbackInfo& info) {
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
@@ -192,8 +178,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, SetEditorState));
   exports.Set(Napi::String::New(env, "setMouseLocation"),
               Napi::Function::New(env, SetMouseLocation));
-  exports.Set(Napi::String::New(env, "sleep"),
-              Napi::Function::New(env, SleepMilliseconds));
   exports.Set(Napi::String::New(env, "typeText"),
               Napi::Function::New(env, TypeText));
   return exports;

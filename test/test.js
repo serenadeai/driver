@@ -11,6 +11,11 @@ const run = async () => {
   console.log("Setting mouse location");
   driver.setMouseLocation(200, 200);
 
+  console.log("Running a command");
+  driver.runShell("ls", ["-lah"], {}, (data) => {
+    console.log(data);
+  });
+
   console.log('Typing "My password is Password123!"');
   driver.typeText("My password is Password123!");
 
@@ -20,6 +25,13 @@ const run = async () => {
   if (process.platform == "darwin") {
     console.log("Pressing command+tab");
     driver.pressKey("tab", ["command"]);
+    console.log("Launching calculator...");
+    driver.launchApplication("calc");
+
+    setTimeout(() => {
+      console.log("Quitting calculator...");
+      driver.quitApplication("calc");
+    }, 1000);
   } else {
     console.log("Pressing alt+tab");
     driver.pressKey("tab", ["alt"]);

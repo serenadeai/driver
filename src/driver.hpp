@@ -12,6 +12,5 @@ Napi::Array GetRunningApplications(const Napi::CallbackInfo& info);
 Napi::Value PressKey(const Napi::CallbackInfo& info);
 Napi::Value SetEditorState(const Napi::CallbackInfo& info);
 Napi::Value SetMouseLocation(const Napi::CallbackInfo& info);
-Napi::Value SleepMilliseconds(const Napi::CallbackInfo& info);
 Napi::Value TypeText(const Napi::CallbackInfo& info);
 Napi::Object Init(Napi::Env env, Napi::Object exports);
