@@ -70,7 +70,7 @@ Napi::Value GetEditorState(const Napi::CallbackInfo& info) {
 
 #ifdef __APPLE__
   Napi::Object result = Napi::Object::New(env);
-  result.Set("source", driver::GetEditorSource());
+  result.Set("text", driver::GetEditorSource());
   result.Set("cursor", driver::GetEditorCursor());
   return result;
 #else

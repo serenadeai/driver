@@ -35,10 +35,6 @@ exports.clickButton = (button) => {
   lib.clickButton(button);
 };
 
-exports.doubleClick = (button) => {
-  exports.click(button, 2);
-};
-
 exports.focusApplication = (app, aliases) => {
   const apps = applicationMatches(application, exports.getRunningApplications(), aliases);
   if (apps.length == 0) {
@@ -191,12 +187,12 @@ exports.runShell = (command, args, options, callback) => {
   });
 };
 
-exports.setEditorState = (source, cursor, cursorEnd) => {
+exports.setEditorState = (text, cursor, cursorEnd) => {
   if (!cursorEnd) {
     cursorEnd = 0;
   }
 
-  lib.setEditorState(source, cursor, cursorEnd);
+  lib.setEditorState(text, cursor, cursorEnd);
 };
 
 exports.setMouseLocation = (x, y) => {
