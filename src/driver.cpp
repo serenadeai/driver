@@ -78,6 +78,19 @@ Napi::Value GetEditorState(const Napi::CallbackInfo& info) {
 #endif
 }
 
+Napi::Value GetMouseLocation(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+#ifdef __APPLE__
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("x", driver::GetMouseX());
+  result.Set("y", driver::GetMouseY());
+  return result;
+#else
+  return env.Null();
+#endif
+}
+
 Napi::Array GetRunningApplications(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   std::vector<std::string> running = driver::GetRunningApplications();
@@ -87,6 +100,26 @@ Napi::Array GetRunningApplications(const Napi::CallbackInfo& info) {
   }
 
   return result;
+}
+
+Napi::Value MouseDown(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+#ifdef __APPLE__
+  driver::MouseDown(info[0].As<Napi::String>().Utf8Value());
+#endif
+
+  return env.Null();
+}
+
+Napi::Value MouseUp(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+
+#ifdef __APPLE__
+  driver::MouseUp(info[0].As<Napi::String>().Utf8Value());
+#endif
+
+  return env.Null();
 }
 
 Napi::Value PressKey(const Napi::CallbackInfo& info) {
@@ -170,10 +203,16 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, GetClickableButtons));
   exports.Set(Napi::String::New(env, "getEditorState"),
               Napi::Function::New(env, GetEditorState));
+  exports.Set(Napi::String::New(env, "getMouseLocation"),
+              Napi::Function::New(env, GetMouseLocation));
   exports.Set(Napi::String::New(env, "getRunningApplications"),
               Napi::Function::New(env, GetRunningApplications));
   exports.Set(Napi::String::New(env, "pressKey"),
               Napi::Function::New(env, PressKey));
+  exports.Set(Napi::String::New(env, "mouseDown"),
+              Napi::Function::New(env, MouseDown));
+  exports.Set(Napi::String::New(env, "mouseUp"),
+              Napi::Function::New(env, MouseUp));
   exports.Set(Napi::String::New(env, "setEditorState"),
               Napi::Function::New(env, SetEditorState));
   exports.Set(Napi::String::New(env, "setMouseLocation"),

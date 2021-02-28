@@ -35,13 +35,22 @@ exports.clickButton = (button) => {
   lib.clickButton(button);
 };
 
-exports.focusApplication = (app, aliases) => {
-  const apps = applicationMatches(application, exports.getRunningApplications(), aliases);
-  if (apps.length == 0) {
+exports.focusApplication = (application, aliases) => {
+  const matching = applicationMatches(application, exports.getRunningApplications(), aliases);
+  if (matching.length == 0) {
     return;
   }
 
-  lib.focusApplication(apps[0]);
+  lib.focusApplication(matching[0]);
+};
+
+exports.focusOrLaunchApplication = (application, aliases) => {
+  const matching = applicationMatches(application, exports.getRunningApplications(), aliases);
+  if (matching.length == 0) {
+    exports.launchApplication(application, aliases);
+  } else {
+    lib.focusApplication(matching[0]);
+  }
 };
 
 exports.getActiveApplication = () => {
@@ -90,6 +99,10 @@ exports.getInstalledApplications = () => {
   return [];
 };
 
+exports.getMouseLocation = () => {
+  return lib.getMouseLocation();
+};
+
 exports.getRunningApplications = () => {
   return lib.getRunningApplications();
 };
@@ -100,15 +113,15 @@ exports.launchApplication = (application, aliases) => {
     return;
   }
 
-  const apps = applicationMatches(application, exports.getInstalledApplications(), aliases);
-  if (apps.length == 0) {
+  const matching = applicationMatches(application, exports.getInstalledApplications(), aliases);
+  if (matching.length == 0) {
     return;
   }
 
   if (os.platform() == "darwin") {
-    child_process.spawn("open", [apps[0]], { detached: true });
+    child_process.spawn("open", [matching[0]], { detached: true });
   } else if (os.platform() == "win32") {
-    let app = apps[0];
+    let app = matching[0];
     if (app.endsWith(".lnk")) {
       shortcut.query(app, (error, data) => {
         if (error) {
@@ -131,6 +144,22 @@ exports.launchApplication = (application, aliases) => {
       child_process.spawn(app, [], { detached: true });
     }
   }
+};
+
+exports.mouseDown = (button) => {
+  if (!button) {
+    button = "left";
+  }
+
+  lib.mouseDown(button);
+};
+
+exports.mouseUp = (button) => {
+  if (!button) {
+    button = "left";
+  }
+
+  lib.mouseUp(button);
 };
 
 exports.pressKey = (key, modifiers, count) => {

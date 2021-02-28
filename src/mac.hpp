@@ -12,7 +12,7 @@
 
 namespace driver {
 
-void Click(const std::string& buttonType, int count);
+void Click(const std::string& button, int count);
 bool ClickButton(AXUIElementRef element, const std::string& button);
 void ClickButton(const std::string& button);
 AXUIElementRef CreateActiveTextFieldRef();
@@ -26,6 +26,8 @@ void GetClickableButtons(AXUIElementRef element,
 std::vector<std::string> GetClickableButtons();
 int GetEditorCursor();
 std::string GetEditorSource();
+int GetMouseX();
+int GetMouseY();
 std::string GetRoleDescription(AXUIElementRef element);
 std::string GetRawTitle(AXUIElementRef element);
 std::vector<std::string> GetRunningApplications();
@@ -33,6 +35,8 @@ std::string GetTitle(AXUIElementRef element);
 bool HasActionName(AXUIElementRef element, CFStringRef name);
 bool IsButton(AXUIElementRef element);
 std::string KeyCodeToString(int keyCode, bool shift);
+void MouseDown(const std::string& button);
+void MouseUp(const std::string& button);
 void PressKey(const std::string& key,
               const std::vector<std::string>& modifiers);
 void SetEditorState(const std::string& source, int cursor, int cursorEnd);

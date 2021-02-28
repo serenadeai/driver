@@ -1,4 +1,4 @@
-![Serenade Logo](https://cdn.serenade.ai/img/logo-small.png)
+<img src="https://cdn.serenade.ai/img/logo-github.png" width="250px" alt="Serenade Logo" />
 
 # serenade-driver
 
@@ -51,6 +51,12 @@ Get a list of applications installed on the system.
 
 * Returns: `<string[]>` List of application paths.
 
+### getMouseLocation()
+
+Get the current (x, y) coordinates of the mouse.
+
+* Returns: `<{ x: number, y: number }>` Location of the mouse.
+
 ### getRunningApplications
 
 Get a list of currently-running applications.
@@ -62,6 +68,18 @@ Get a list of currently-running applications.
 Launch an application.
 
 * `application <string>` Substring of the application to launch.
+
+### mouseDown(button)
+
+Press the mouse down.
+
+* `button <string>` Mouse button to press. Can be `left`, `middle`, or `right`.
+
+### mouseUp(button)
+
+Release a mouse down.
+
+* `button <string>` Mouse button to release. Can be `left`, `middle`, or `right`.
 
 ### pressKey(key[, modifiers][, count])
 

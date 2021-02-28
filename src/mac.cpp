@@ -12,18 +12,13 @@
 
 namespace driver {
 
-void Click(const std::string& buttonType, int count) {
-  CGEventType downEventType = buttonType == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown;
-  CGEventType upEventType = buttonType == "left" ? kCGEventLeftMouseUp : kCGEventRightMouseUp;
-  CGMouseButton button = buttonType == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight;
+void Click(const std::string& button, int count) {
+  CGEventType downEventType = button == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown;
+  CGEventType upEventType = button == "left" ? kCGEventLeftMouseUp : kCGEventRightMouseUp;
+  CGMouseButton mouseButton = button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight;
 
-  CGFloat y = NSEvent.mouseLocation.y;
-  if (NSScreen.mainScreen != nil) {
-    y = NSScreen.mainScreen.frame.size.height - y;
-  }
-
-  CGEventRef event =
-      CGEventCreateMouseEvent(NULL, downEventType, CGPointMake(NSEvent.mouseLocation.x, y), button);
+  CGEventRef event = CGEventCreateMouseEvent(NULL, downEventType,
+                                             CGPointMake(GetMouseX(), GetMouseY()), mouseButton);
   CGEventPost(kCGHIDEventTap, event);
   CGEventSetType(event, upEventType);
   CGEventPost(kCGHIDEventTap, event);
@@ -283,6 +278,17 @@ std::string GetEditorSource() {
   return title;
 }
 
+int GetMouseX() { return NSEvent.mouseLocation.x; }
+
+int GetMouseY() {
+  CGFloat y = NSEvent.mouseLocation.y;
+  if (NSScreen.mainScreen != nil) {
+    y = NSScreen.mainScreen.frame.size.height - y;
+  }
+
+  return y;
+}
+
 std::string GetRoleDescription(AXUIElementRef element) {
   CFTypeRef description = NULL;
   AXUIElementCopyAttributeValue(element, kAXRoleDescriptionAttribute,
@@ -409,6 +415,24 @@ std::string KeyCodeToString(int keyCode, bool shift) {
   return result;
 }
 
+void MouseDown(const std::string& button) {
+  CGEventRef event = CGEventCreateMouseEvent(
+      NULL, button == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown,
+      CGPointMake(GetMouseX(), GetMouseY()),
+      button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
+  CGEventPost(kCGHIDEventTap, event);
+  CFRelease(event);
+}
+
+void MouseUp(const std::string& button) {
+  CGEventRef event =
+      CGEventCreateMouseEvent(NULL, button == "left" ? kCGEventLeftMouseUp : kCGEventRightMouseUp,
+                              CGPointMake(GetMouseX(), GetMouseY()),
+                              button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
+  CGEventPost(kCGHIDEventTap, event);
+  CFRelease(event);
+}
+
 void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
   ToggleKey(key, modifiers, true);
   ToggleKey(key, modifiers, false);
@@ -449,6 +473,7 @@ void SetMouseLocation(int x, int y) {
       CGEventCreateMouseEvent(nil, kCGEventMouseMoved, CGPointMake(x, y), kCGMouseButtonLeft);
   CGEventPost(kCGHIDEventTap, event);
   CFRelease(event);
+  usleep(100000);
 }
 
 void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down) {
