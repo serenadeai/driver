@@ -96,14 +96,12 @@ Napi::Value GetMouseLocation(const Napi::CallbackInfo& info) {
   result.Set("x", driver::GetMouseX());
   result.Set("y", driver::GetMouseY());
   return result;
-#elif __linux__
+#else
   std::tuple<int, int> location = driver::GetMouseLocation();
   Napi::Object result = Napi::Object::New(env);
   result.Set("x", std::get<0>(location));
   result.Set("y", std::get<1>(location));
   return result;
-#else
-  return env.Null();
 #endif
 }
 
@@ -121,12 +119,12 @@ Napi::Array GetRunningApplications(const Napi::CallbackInfo& info) {
 Napi::Value MouseDown(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-#ifdef __APPLE__
-  driver::MouseDown(info[0].As<Napi::String>().Utf8Value());
-#elif __linux__
+#if __linux__
   Display* display = XOpenDisplay(NULL);
   driver::MouseDown(display, info[0].As<Napi::String>().Utf8Value());
   XCloseDisplay(display);
+#else
+  driver::MouseDown(info[0].As<Napi::String>().Utf8Value());
 #endif
 
   return env.Null();
@@ -135,12 +133,12 @@ Napi::Value MouseDown(const Napi::CallbackInfo& info) {
 Napi::Value MouseUp(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
-#ifdef __APPLE__
-  driver::MouseUp(info[0].As<Napi::String>().Utf8Value());
-#elif __linux__
+#if __linux__
   Display* display = XOpenDisplay(NULL);
   driver::MouseUp(display, info[0].As<Napi::String>().Utf8Value());
   XCloseDisplay(display);
+#else
+  driver::MouseUp(info[0].As<Napi::String>().Utf8Value());
 #endif
 
   return env.Null();

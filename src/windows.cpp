@@ -1,26 +1,21 @@
+#include <windows.h>
+
 #include <processthreadsapi.h>
 #include <psapi.h>
-#include <windef.h>
 #include <winuser.h>
 
+#include <algorithm>
+#include <tuple>
 #include <vector>
 
 #include "windows.hpp"
 
 namespace driver {
 
-void Click(const std::string& buttonType, int count) {
+void Click(const std::string& button, int count) {
   for (int i = 0; i < count; i++) {
-    if (buttonType == "right") {
-      mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
-      mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
-    } else if (buttonType == "middle") {
-      mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
-      mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
-    } else {
-      mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
-      mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-    }
+    MouseDown(button);
+    MouseUp(button);
   }
 }
 
@@ -67,6 +62,16 @@ std::string GetActiveApplication() {
   return ProcessName(active);
 }
 
+std::tuple<int, int> GetMouseLocation() {
+  POINT point;
+  GetCursorPos(&point);
+
+  std::tuple<int, int> result;
+  std::get<0>(result) = point.x;
+  std::get<1>(result) = point.y;
+  return result;
+}
+
 std::vector<std::string> GetRunningApplications() {
   std::vector<std::string> result;
   EnumWindows(GetRunningWindows, reinterpret_cast<LPARAM>(&result));
@@ -90,6 +95,26 @@ BOOL CALLBACK GetRunningWindows(HWND window, LPARAM data) {
   }
 
   return TRUE;
+}
+
+void MouseDown(const std::string& button) {
+  if (button == "right") {
+    mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
+  } else if (button == "middle") {
+    mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
+  } else {
+    mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+  }
+}
+
+void MouseUp(const std::string& button) {
+  if (button == "right") {
+    mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+  } else if (button == "middle") {
+    mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
+  } else {
+    mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+  }
 }
 
 void PressKey(const std::string& key, std::vector<std::string> modifiers) {

@@ -47,6 +47,18 @@ if (process.platform == "darwin") {
     driver.click("left", 2);
   }, 1000);
 } else {
-  console.log("Pressing alt+tab");
-  driver.pressKey("tab", ["alt"]);
+  console.log("Pressing menu");
+  driver.setMouseLocation(20, 20);
+  driver.mouseDown();
+  setTimeout(() => {
+    driver.mouseUp();
+
+    setTimeout(() => {
+      console.log("Pressing alt+tab");
+      driver.pressKey("tab", ["alt"]);
+
+      console.log("Double clicking");
+      driver.click("left", 2);
+    }, 100);
+  }, 1000);
 }

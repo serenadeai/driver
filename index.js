@@ -91,9 +91,9 @@ exports.getInstalledApplications = () => {
   if (os.platform() == "darwin") {
     return search("/Applications", 0, max).concat(search("/System/Applications", 0, max));
   } else if (os.platform() == "win32") {
-    return search(app.getPath("desktop"), 0, max)
-      .concat(search(`${app.getPath("appData")}\\Microsoft\\Windows\\Start Menu\\Programs`, 0, max))
-      .concat(search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max));
+    return search(path.join(os.homedir(), "Desktop"), 0, max).concat(
+      search(path.join(process.env.APPDATA, "Microsoft", "Windows", "Start Menu", "Programs"), 0, max)).concat(
+      search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max));
   }
 
   return [];
