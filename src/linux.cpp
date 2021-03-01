@@ -9,46 +9,27 @@
 #include <fstream>
 #include <streambuf>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "linux.hpp"
 
 namespace driver {
 
-void Click(const std::string& buttonType, int count) {
-  Display* display = XOpenDisplay(NULL);
-  int button = Button1;
-  if (buttonType == "middle") {
-    button = Button2;
-  } else if (buttonType == "right") {
-    button = Button3;
-  }
-
+void Click(Display* display, const std::string& button, int count) {
   for (int i = 0; i < count; i++) {
-    XTestFakeButtonEvent(display, button, true, 0);
-    XFlush(display);
-    usleep(10000);
-    XTestFakeButtonEvent(display, button, false, 0);
-    XFlush(display);
+    MouseDown(display, button);
+    MouseUp(display, button);
   }
-
-  XCloseDisplay(display);
 }
 
 void FocusApplication(const std::string& application) {
+  Display* display = XOpenDisplay(NULL);
   std::string lower = application;
   ToLower(lower);
 
-  Display* display = XOpenDisplay(NULL);
-  Window root = XDefaultRootWindow(display);
-
-  unsigned long length = 0;
-  unsigned char* property = 0;
-  GetProperty(display, root, "_NET_CLIENT_LIST", &property, &length);
-
-  Window* windows = (Window*)property;
-  for (unsigned long i = 0; i < length; i++) {
-    Window window = windows[i];
+  std::vector<Window> windows = GetAllWindows(display);
+  for (Window window : windows) {
     std::string name = ProcessName(display, window);
     if (name.find(application) != std::string::npos) {
       XClientMessageEvent event;
@@ -65,10 +46,10 @@ void FocusApplication(const std::string& application) {
       XSendEvent(display, root, 0,
                  SubstructureRedirectMask | SubstructureNotifyMask,
                  (XEvent*)&event);
+      break;
     }
   }
 
-  XFree(windows);
   XCloseDisplay(display);
 }
 
@@ -87,8 +68,28 @@ std::string GetActiveApplication() {
   return result;
 }
 
-void GetKeycode(Display* display, const std::string& key, int* keycode,
-                bool* shift) {
+std::vector<Window> GetAllWindows(Display* display) {
+  Window root = XDefaultRootWindow(display);
+  unsigned long length = 0;
+  unsigned char* property = 0;
+  GetProperty(display, root, "_NET_CLIENT_LIST", &property, &length);
+
+  std::vector<Window> result;
+  Window* windows = (Window*)property;
+  for (unsigned long i = 0; i < length; i++) {
+    result.push_back(windows[i]);
+  }
+
+  XFree(windows);
+  return result;
+}
+
+std::tuple<int, bool> GetKeycodeAndModifiers(Display* display,
+                                             const std::string& key) {
+  std::tuple<int, bool> result;
+  std::get<0>(result) = -1;
+  std::get<1>(result) = false;
+
   // convert our key names to the corresponding x11 key
   std::string mapped = key;
   if (key == "escape") {
@@ -237,12 +238,44 @@ void GetKeycode(Display* display, const std::string& key, int* keycode,
 
       std::string name(s);
       if (mapped == name) {
-        *keycode = i;
-        *shift = modifier == 1;
-        return;
+        std::get<0>(result) = i;
+        std::get<1>(result) = modifier == 1;
+        return result;
       }
     }
   }
+
+  return result;
+}
+
+int GetMouseButton(const std::string& button) {
+  if (button == "middle") {
+    return Button2;
+  } else if (button == "right") {
+    return Button3;
+  }
+
+  return Button1;
+}
+
+std::tuple<int, int> GetMouseLocation() {
+  std::tuple<int, int> result;
+  Display* display = XOpenDisplay(NULL);
+  Window root = XDefaultRootWindow(display);
+  Window rootReturn;
+  Window childReturn;
+  int x = 0;
+  int y = 0;
+  int windowX = 0;
+  int windowY = 0;
+  unsigned int mask;
+  XQueryPointer(display, root, &rootReturn, &childReturn, &x, &y, &windowX,
+                &windowY, &mask);
+
+  std::get<0>(result) = x;
+  std::get<1>(result) = y;
+  XCloseDisplay(display);
+  return result;
 }
 
 void GetProperty(Display* display, Window window, const std::string& property,
@@ -257,16 +290,10 @@ void GetProperty(Display* display, Window window, const std::string& property,
 
 std::vector<std::string> GetRunningApplications() {
   Display* display = XOpenDisplay(NULL);
-  Window root = XDefaultRootWindow(display);
+  std::vector<Window> windows = GetAllWindows(display);
 
-  unsigned long length = 0;
-  unsigned char* property = 0;
-  GetProperty(display, root, "_NET_CLIENT_LIST", &property, &length);
-
-  Window* windows = (Window*)property;
   std::vector<std::string> result;
-  for (unsigned long i = 0; i < length; i++) {
-    Window window = windows[i];
+  for (Window window : windows) {
     std::string name = ProcessName(display, window);
     name.erase(std::find(name.begin(), name.end(), '\0'), name.end());
     result.push_back(name);
@@ -274,16 +301,28 @@ std::vector<std::string> GetRunningApplications() {
 
   std::sort(result.begin(), result.end());
   result.erase(std::unique(result.begin(), result.end()), result.end());
-
-  XFree(windows);
   return result;
+}
+
+void MouseDown(Display* display, const std::string& button) {
+  XTestFakeButtonEvent(display, GetMouseButton(button), true, 0);
+  XFlush(display);
+  usleep(10000);
+}
+
+void MouseUp(Display* display, const std::string& button) {
+  XTestFakeButtonEvent(display, GetMouseButton(button), false, 0);
+  XFlush(display);
+  usleep(10000);
 }
 
 void PressKey(Display* display, std::string key,
               std::vector<std::string> modifiers) {
-  int keycode = -1;
-  bool shift = false;
-  GetKeycode(display, key, &keycode, &shift);
+  std::tuple<int, bool> keycodeAndModifers =
+      GetKeycodeAndModifiers(display, key);
+  int keycode = std::get<0>(keycodeAndModifers);
+  bool shift = std::get<1>(keycodeAndModifers);
+
   if (keycode == -1) {
     return;
   }
@@ -331,9 +370,9 @@ void SetMouseLocation(int x, int y) {
 }
 
 void ToggleKey(Display* display, const std::string& key, bool down) {
-  int keycode = -1;
-  bool shift = false;
-  GetKeycode(display, key, &keycode, &shift);
+  std::tuple<int, bool> keycodeAndModifers =
+      GetKeycodeAndModifiers(display, key);
+  int keycode = std::get<0>(keycodeAndModifers);
   if (keycode == -1) {
     return;
   }

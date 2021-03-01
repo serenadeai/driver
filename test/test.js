@@ -5,12 +5,6 @@ console.log("Running applications:", driver.getRunningApplications().slice(0, 5)
 console.log("Installed applications:", driver.getInstalledApplications().slice(0, 5));
 console.log("Mouse location:", driver.getMouseLocation());
 
-console.log("Double clicking");
-driver.click("left", 2);
-
-console.log("Setting mouse location");
-driver.setMouseLocation(200, 200);
-
 console.log("Running a command");
 driver.runShell("ls", ["-lah"], {}, (data) => {
   console.log(data);
@@ -38,6 +32,19 @@ if (process.platform == "darwin") {
       console.log("Quitting calculator...");
       driver.quitApplication("calc");
     }, 1000);
+  }, 1000);
+} else if (process.platform == "linux") {
+  console.log("Pressing menu");
+  driver.setMouseLocation(80, 65);
+  driver.mouseDown();
+  setTimeout(() => {
+    driver.mouseUp();
+
+    console.log("Pressing alt+tab");
+    driver.pressKey("tab", ["alt"]);
+
+    console.log("Double clicking");
+    driver.click("left", 2);
   }, 1000);
 } else {
   console.log("Pressing alt+tab");
