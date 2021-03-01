@@ -3,6 +3,7 @@
 #import <Foundation/Foundation.h>
 
 #include <string>
+#include <tuple>
 #include <vector>
 
 #define kVirtualKeyNotFound 65535
@@ -26,8 +27,7 @@ void GetClickableButtons(AXUIElementRef element,
 std::vector<std::string> GetClickableButtons();
 int GetEditorCursor();
 std::string GetEditorSource();
-int GetMouseX();
-int GetMouseY();
+std::tuple<int, int> GetMouseLocation();
 std::string GetRoleDescription(AXUIElementRef element);
 std::string GetRawTitle(AXUIElementRef element);
 std::vector<std::string> GetRunningApplications();

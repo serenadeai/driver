@@ -90,19 +90,11 @@ Napi::Value GetEditorState(const Napi::CallbackInfo& info) {
 
 Napi::Value GetMouseLocation(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-
-#ifdef __APPLE__
-  Napi::Object result = Napi::Object::New(env);
-  result.Set("x", driver::GetMouseX());
-  result.Set("y", driver::GetMouseY());
-  return result;
-#else
   std::tuple<int, int> location = driver::GetMouseLocation();
   Napi::Object result = Napi::Object::New(env);
   result.Set("x", std::get<0>(location));
   result.Set("y", std::get<1>(location));
   return result;
-#endif
 }
 
 Napi::Array GetRunningApplications(const Napi::CallbackInfo& info) {

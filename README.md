@@ -27,25 +27,25 @@ Bring an application to the foreground.
 
 * `application <string>` Application to focus. This value is a substring of the application's path.
 
-### getActiveApplication
+### getActiveApplication()
 
 Get the path of the currently-active application.
 
 * Returns: `<string>` path of the active application.
 
-### getClickableButtons
+### getClickableButtons()
 
 Get a list of all of the buttons that can currently be clicked (i.e., are visible in the active application). Currently macOS only.
 
 * Returns: `<string[]>` A list of button titles.
 
-### getEditorState
+### getEditorState()
 
 Get the text and cursor position of the currently-active text field. Currently macOS only.
 
 * Returns: `<{ text: string, cursor: number }>` Text field data.
 
-### getInstalledApplications
+### getInstalledApplications()
 
 Get a list of applications installed on the system.
 
@@ -57,7 +57,7 @@ Get the current (x, y) coordinates of the mouse.
 
 * Returns: `<{ x: number, y: number }>` Location of the mouse.
 
-### getRunningApplications
+### getRunningApplications()
 
 Get a list of currently-running applications.
 
