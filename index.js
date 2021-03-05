@@ -24,7 +24,7 @@ exports.click = async (button, count) => {
     button = "left";
   }
 
-  if (!count) {
+  if (count === undefined || count === false) {
     count = 1;
   }
 
@@ -36,7 +36,7 @@ exports.click = async (button, count) => {
 };
 
 exports.clickButton = async (button, count) => {
-  if (!count) {
+  if (count === undefined || count === false) {
     count = 1;
   }
 
@@ -243,7 +243,7 @@ exports.pressKey = async (key, modifiers, count) => {
     modifiers = [];
   }
 
-  if (!count) {
+  if (count === undefined || count === false) {
     count = 1;
   }
 
