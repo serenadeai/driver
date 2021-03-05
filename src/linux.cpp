@@ -160,7 +160,7 @@ std::tuple<int, bool> GetKeycodeAndModifiers(Display* display,
     mapped = "apostrophe";
   } else if (key == "\"") {
     mapped = "quotedbl";
-  } else if (key == "enter" || key == "return") {
+  } else if (key == "enter" || key == "return" || key == "\n") {
     mapped = "Return";
   } else if (key == ",") {
     mapped = "comma";

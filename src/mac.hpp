@@ -14,8 +14,8 @@
 namespace driver {
 
 void Click(const std::string& button, int count);
-bool ClickButton(AXUIElementRef element, const std::string& button);
-void ClickButton(const std::string& button);
+bool ClickButton(AXUIElementRef element, const std::string& button, int count);
+void ClickButton(const std::string& button, int count);
 AXUIElementRef CreateActiveTextFieldRef();
 AXUIElementRef CreateActiveWindowRef();
 CFArrayRef CreateChildrenArray(AXUIElementRef element);

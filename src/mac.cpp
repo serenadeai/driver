@@ -38,7 +38,7 @@ void Click(const std::string& button, int count) {
   CFRelease(event);
 }
 
-bool ClickButton(AXUIElementRef element, const std::string& button) {
+bool ClickButton(AXUIElementRef element, const std::string& button, int count) {
   CFArrayRef children = CreateChildrenArray(element);
   int n = CFArrayGetCount(children);
   for (CFIndex i = 0; i < 20 && i < n; i++) {
@@ -48,17 +48,21 @@ bool ClickButton(AXUIElementRef element, const std::string& button) {
     if (IsButton(child)) {
       if (title == button) {
         if (HasActionName(child, kAXPressAction)) {
-          AXUIElementPerformAction(child, kAXPressAction);
+          for (int i = 0; i < count; i++) {
+            AXUIElementPerformAction(child, kAXPressAction);
+          }
           CFRelease(children);
           return true;
         } else if (HasActionName(child, kAXOpenAction)) {
-          AXUIElementPerformAction(child, kAXOpenAction);
+          for (int i = 0; i < count; i++) {
+            AXUIElementPerformAction(child, kAXOpenAction);
+          }
           CFRelease(children);
           return true;
         }
       }
     } else {
-      if (ClickButton(child, button)) {
+      if (ClickButton(child, button, count)) {
         CFRelease(children);
         return true;
       }
@@ -69,7 +73,7 @@ bool ClickButton(AXUIElementRef element, const std::string& button) {
   return false;
 }
 
-void ClickButton(const std::string& button) {
+void ClickButton(const std::string& button, int count) {
   AXUIElementRef window = CreateActiveWindowRef();
   if (window == NULL) {
     return;
@@ -77,7 +81,7 @@ void ClickButton(const std::string& button) {
 
   std::string name = button;
   ToLower(name);
-  ClickButton(window, name);
+  ClickButton(window, name, count);
 }
 
 AXUIElementRef CreateActiveWindowRef() {
@@ -552,7 +556,7 @@ void ToLower(std::string& s) {
 }
 
 CGKeyCode VirtualKey(const std::string& key, bool shift) {
-  if (key == "enter") {
+  if (key == "enter" || key == "\n") {
     return CGKeyCode(kVK_Return);
   } else if (key == "return") {
     return CGKeyCode(kVK_Return);

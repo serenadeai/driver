@@ -1,5 +1,6 @@
 #include <windows.h>
 
+// must be included after <windows.h>
 #include <processthreadsapi.h>
 #include <psapi.h>
 #include <winuser.h>
@@ -203,7 +204,7 @@ int VirtualKey(const std::string& key) {
     return VK_LWIN;
   } else if (key == "escape") {
     return VK_ESCAPE;
-  } else if (key == "enter" || key == "return") {
+  } else if (key == "enter" || key == "return" || key == "\n") {
     return VK_RETURN;
   } else if (key == "pageup") {
     return VK_PRIOR;
