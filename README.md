@@ -112,7 +112,7 @@ Run a command at the shell.
 * `command <string>` Name of the executable to run.
 * `args <string[]>` List of arguments to pass to the executable.
 * `options <object>` Object of spawn arguments. Can simply be `{}`. See https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options for more.
-* Returns `<Promise<{ stdout: string, stderr: string>>` Fulfills with the output of the command upon success.
+* Returns `<Promise<{ stdout: string, stderr: string }>>` Fulfills with the output of the command upon success.
 
 ### setEditorState(text, cursor)
 

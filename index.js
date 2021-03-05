@@ -47,6 +47,14 @@ exports.clickButton = async (button, count) => {
   });
 };
 
+exports.delay = async (timeout) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, timeout);
+  });
+};
+
 exports.focusApplication = async (application, aliases) => {
   const matching = applicationMatches(application, await exports.getRunningApplications(), aliases);
   if (matching.length == 0) {
