@@ -19,7 +19,7 @@ const applicationMatches = (application, possible, aliases) => {
   );
 };
 
-exports.click = async (button, count) => {
+exports.click = (button, count) => {
   if (!button) {
     button = "left";
   }
@@ -28,26 +28,18 @@ exports.click = async (button, count) => {
     count = 1;
   }
 
-  return new Promise((resolve) => {
-    lib.click(button, count, () => {
-      resolve();
-    });
-  });
+  return lib.click(button, count);
 };
 
-exports.clickButton = async (button, count) => {
+exports.clickButton = (button, count) => {
   if (count === undefined || count === false) {
     count = 1;
   }
 
-  return new Promise((resolve) => {
-    lib.clickButton(button, count, () => {
-      resolve();
-    });
-  });
+  return lib.clickButton(button, count);
 };
 
-exports.delay = async (timeout) => {
+exports.delay = (timeout) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve();
@@ -61,52 +53,28 @@ exports.focusApplication = async (application, aliases) => {
     return;
   }
 
-  return new Promise((resolve) => {
-    lib.focusApplication(matching[0], () => {
-      resolve();
-    });
-  });
+  return lib.focusApplication(matching[0]);
 };
 
 exports.focusOrLaunchApplication = async (application, aliases) => {
   const matching = applicationMatches(application, await exports.getRunningApplications(), aliases);
   if (matching.length == 0) {
-    return new Promise((resolve) => {
-      exports.launchApplication(application, aliases, () => {
-        resolve();
-      });
-    });
+    return exports.launchApplication(application, aliases);
   } else {
-    return new Promise((resolve) => {
-      lib.focusApplication(matching[0], () => {
-        resolve();
-      });
-    });
+    return lib.focusApplication(matching[0]);
   }
 };
 
-exports.getActiveApplication = async () => {
-  return new Promise((resolve) => {
-    lib.getActiveApplication((error, result) => {
-      resolve(result);
-    });
-  });
+exports.getActiveApplication = () => {
+  return lib.getActiveApplication();
 };
 
-exports.getClickableButtons = async () => {
-  return new Promise((resolve) => {
-    lib.getClickableButtons(() => {
-      resolve();
-    });
-  });
+exports.getClickableButtons = () => {
+  return lib.getClickableButtons();
 };
 
-exports.getEditorState = async () => {
-  return new Promise((resolve) => {
-    lib.getEditorState((error, result) => {
-      resolve(result);
-    });
-  });
+exports.getEditorState = () => {
+  return lib.getEditorState();
 };
 
 exports.getInstalledApplications = async () => {
@@ -155,19 +123,11 @@ exports.getInstalledApplications = async () => {
 };
 
 exports.getMouseLocation = () => {
-  return new Promise((resolve) => {
-    lib.getMouseLocation((error, result) => {
-      resolve(result);
-    });
-  });
+  return lib.getMouseLocation();
 };
 
-exports.getRunningApplications = async () => {
-  return new Promise((resolve) => {
-    lib.getRunningApplications((error, result) => {
-      resolve(result);
-    });
-  });
+exports.getRunningApplications = () => {
+  return lib.getRunningApplications();
 };
 
 exports.launchApplication = async (application, aliases) => {
@@ -214,16 +174,12 @@ exports.launchApplication = async (application, aliases) => {
   }
 };
 
-exports.mouseDown = async (button) => {
+exports.mouseDown = (button) => {
   if (!button) {
     button = "left";
   }
 
-  return new Promise((resolve) => {
-    lib.mouseDown(button, () => {
-      resolve();
-    });
-  });
+  return lib.mouseDown(button);
 };
 
 exports.mouseUp = (button) => {
@@ -231,14 +187,10 @@ exports.mouseUp = (button) => {
     button = "left";
   }
 
-  return new Promise((resolve) => {
-    lib.mouseUp(button, () => {
-      resolve();
-    });
-  });
+  return lib.mouseUp(button);
 };
 
-exports.pressKey = async (key, modifiers, count) => {
+exports.pressKey = (key, modifiers, count) => {
   if (!modifiers) {
     modifiers = [];
   }
@@ -247,11 +199,7 @@ exports.pressKey = async (key, modifiers, count) => {
     count = 1;
   }
 
-  return new Promise((resolve) => {
-    lib.pressKey(key, modifiers, count, () => {
-      resolve();
-    });
-  });
+  return lib.pressKey(key, modifiers, count);
 };
 
 exports.quitApplication = async (application, aliases) => {
@@ -268,13 +216,8 @@ exports.quitApplication = async (application, aliases) => {
     key = "q";
   }
 
-  return new Promise((resolve) => {
-    lib.focusApplication(application, () => {
-      lib.pressKey(key, modifiers, 1, () => {
-        resolve();
-      });
-    });
-  });
+  await lib.focusApplication(application);
+  return lib.pressKey(key, modifiers, 1);
 };
 
 exports.runShell = async (command, args, options) => {
@@ -301,17 +244,15 @@ exports.runShell = async (command, args, options) => {
   });
 };
 
-exports.setEditorState = async (text, cursor, cursorEnd) => {
+exports.setEditorState = (text, cursor, cursorEnd) => {
   if (!cursorEnd) {
     cursorEnd = 0;
   }
 
-  return new Promise((resolve) => {
-    lib.setEditorState(text, cursor, cursorEnd);
-  });
+  return lib.setEditorState(text, cursor, cursorEnd);
 };
 
-exports.setMouseLocation = async (x, y) => {
+exports.setMouseLocation = (x, y) => {
   if (x < 0) {
     x = 0;
   }
@@ -320,21 +261,13 @@ exports.setMouseLocation = async (x, y) => {
     y = 0;
   }
 
-  return new Promise((resolve) => {
-    lib.setMouseLocation(x, y, () => {
-      resolve();
-    });
-  });
+  return lib.setMouseLocation(x, y);
 };
 
-exports.typeText = async (text) => {
+exports.typeText = (text) => {
   if (!text) {
     return;
   }
 
-  return new Promise((resolve) => {
-    lib.typeText(text, () => {
-      resolve();
-    });
-  });
+  return lib.typeText(text);
 };

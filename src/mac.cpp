@@ -109,9 +109,11 @@ AXUIElementRef CreateActiveTextFieldRef() {
   }
 
   AXUIElementRef app = AXUIElementCreateApplication(running.processIdentifier);
-  CFBooleanRef value = kCFBooleanTrue;
-  AXUIElementSetAttributeValue(app, kAXManualAccessibilityAttribute, value);
+  if (app == NULL) {
+    return NULL;
+  }
 
+  AXUIElementSetAttributeValue(app, kAXManualAccessibilityAttribute, kCFBooleanTrue);
   AXUIElementRef field = NULL;
   AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute,
                                 reinterpret_cast<CFTypeRef*>(&field));

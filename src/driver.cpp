@@ -22,316 +22,223 @@
 
 #endif
 
-ClickAsyncWorker::ClickAsyncWorker(std::string button, int count,
-                                   const Napi::Function& callback)
-    : Napi::AsyncWorker(callback), button_(button), count_(count) {}
+Napi::Promise Click(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-void ClickAsyncWorker::Execute() {
+  std::string button = info[0].As<Napi::String>().Utf8Value();
+  int count = info[1].As<Napi::Number>().Int32Value();
+
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
-  driver::Click(display, button_, count_);
+  driver::Click(display, button, count);
   XCloseDisplay(display);
 #else
-  driver::Click(button_, count_);
+  driver::Click(button, count);
 #endif
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
 }
 
-void ClickAsyncWorker::OnOK() { Callback().Call({}); }
+Napi::Promise ClickButton(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-void Click(const Napi::CallbackInfo& info) {
-  ClickAsyncWorker* worker = new ClickAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(),
-      info[1].As<Napi::Number>().Int32Value(), info[2].As<Napi::Function>());
-  worker->Queue();
-}
-
-ClickButtonAsyncWorker::ClickButtonAsyncWorker(std::string button, int count,
-                                               const Napi::Function& callback)
-    : Napi::AsyncWorker(callback), button_(button), count_(count) {}
-
-void ClickButtonAsyncWorker::Execute() { driver::ClickButton(button_, count_); }
-
-void ClickButtonAsyncWorker::OnOK() { Callback().Call({}); }
-
-void ClickButton(const Napi::CallbackInfo& info) {
-  ClickButtonAsyncWorker* worker = new ClickButtonAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(),
-      info[1].As<Napi::Number>().Int32Value(), info[2].As<Napi::Function>());
-  worker->Queue();
-}
-
-FocusApplicationAsyncWorker::FocusApplicationAsyncWorker(
-    std::string application, const Napi::Function& callback)
-    : Napi::AsyncWorker(callback), application_(application) {}
-
-void FocusApplicationAsyncWorker::Execute() {
-  driver::FocusApplication(application_);
-}
-
-void FocusApplicationAsyncWorker::OnOK() { Callback().Call({}); }
-
-void FocusApplication(const Napi::CallbackInfo& info) {
-  FocusApplicationAsyncWorker* worker = new FocusApplicationAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(), info[1].As<Napi::Function>());
-  worker->Queue();
-}
-
-GetActiveApplicationAsyncWorker::GetActiveApplicationAsyncWorker(
-    const Napi::Function& callback)
-    : Napi::AsyncWorker(callback) {}
-
-void GetActiveApplicationAsyncWorker::Execute() {
-  active_ = driver::GetActiveApplication();
-}
-
-void GetActiveApplicationAsyncWorker::OnOK() {
-  Callback().Call({Env().Undefined(), Napi::String::New(Env(), active_)});
-}
-
-void GetActiveApplication(const Napi::CallbackInfo& info) {
-  GetActiveApplicationAsyncWorker* worker =
-      new GetActiveApplicationAsyncWorker(info[0].As<Napi::Function>());
-  worker->Queue();
-}
-
-GetClickableButtonsAsyncWorker::GetClickableButtonsAsyncWorker(
-    const Napi::Function& callback)
-    : Napi::AsyncWorker(callback) {}
-
-void GetClickableButtonsAsyncWorker::Execute() {
-  buttons_ = driver::GetClickableButtons();
-}
-
-void GetClickableButtonsAsyncWorker::OnOK() {
 #ifdef __APPLE__
-  Napi::Array result = Napi::Array::New(Env(), buttons_.size());
-  for (size_t i = 0; i < buttons_.size(); i++) {
-    result[i] = buttons_[i];
+  driver::ClickButton(info[0].As<Napi::String>().Utf8Value(),
+                      info[1].As<Napi::Number>().Int32Value());
+#endif
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
+}
+
+Napi::Promise FocusApplication(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+  driver::FocusApplication(info[0].As<Napi::String>().Utf8Value());
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
+}
+
+Napi::Promise GetActiveApplication(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+  deferred.Resolve(Napi::String::New(env, driver::GetActiveApplication()));
+  return deferred.Promise();
+}
+
+Napi::Promise GetClickableButtons(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+#ifdef __APPLE__
+  std::vector<std::string> clickable = driver::GetClickableButtons();
+  Napi::Array result = Napi::Array::New(env, clickable.size());
+  for (size_t i = 0; i < clickable.size(); i++) {
+    result[i] = clickable[i];
   }
+
+  deferred.Resolve(result);
 #else
-  Napi::Array result = Napi::Array::New(Env(), 0);
+  Napi::Array result = Napi::Array::New(env, 0);
+  deferred.Resolve(result);
 #endif
 
-  Callback().Call({Env().Undefined(), result});
+  return deferred.Promise();
 }
 
-void GetClickableButtons(const Napi::CallbackInfo& info) {
-  GetClickableButtonsAsyncWorker* worker =
-      new GetClickableButtonsAsyncWorker(info[0].As<Napi::Function>());
-  worker->Queue();
-}
-
-GetEditorStateAsyncWorker::GetEditorStateAsyncWorker(
-    const Napi::Function& callback)
-    : Napi::AsyncWorker(callback) {}
-
-void GetEditorStateAsyncWorker::Execute() {
-  text_ = driver::GetEditorSource();
-  cursor_ = driver::GetEditorCursor();
-}
-
-void GetEditorStateAsyncWorker::OnOK() {
-  Napi::Object result = Napi::Object::New(Env());
+Napi::Promise GetEditorState(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
 #ifdef __APPLE__
-  result.Set("text", text_);
-  result.Set("cursor", cursor_);
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("text", driver::GetEditorSource());
+  result.Set("cursor", driver::GetEditorCursor());
+  deferred.Resolve(result);
+#else
+  deferred.Resolve(env.Undefined());
 #endif
 
-  Callback().Call({Env().Undefined(), result});
+  return deferred.Promise();
 }
 
-void GetEditorState(const Napi::CallbackInfo& info) {
-  GetEditorStateAsyncWorker* worker =
-      new GetEditorStateAsyncWorker(info[0].As<Napi::Function>());
-  worker->Queue();
-}
+Napi::Promise GetMouseLocation(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-GetMouseLocationAsyncWorker::GetMouseLocationAsyncWorker(
-    const Napi::Function& callback)
-    : Napi::AsyncWorker(callback) {}
-
-void GetMouseLocationAsyncWorker::Execute() {
   std::tuple<int, int> location = driver::GetMouseLocation();
-  x_ = std::get<0>(location);
-  y_ = std::get<1>(location);
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("x", std::get<0>(location));
+  result.Set("y", std::get<1>(location));
+  deferred.Resolve(result);
+
+  return deferred.Promise();
 }
 
-void GetMouseLocationAsyncWorker::OnOK() {
-  Napi::Object result = Napi::Object::New(Env());
-  result.Set("x", x_);
-  result.Set("y", y_);
-  Callback().Call({Env().Undefined(), result});
-}
+Napi::Promise GetRunningApplications(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-void GetMouseLocation(const Napi::CallbackInfo& info) {
-  GetMouseLocationAsyncWorker* worker =
-      new GetMouseLocationAsyncWorker(info[0].As<Napi::Function>());
-  worker->Queue();
-}
-
-GetRunningApplicationsAsyncWorker::GetRunningApplicationsAsyncWorker(
-    const Napi::Function& callback)
-    : Napi::AsyncWorker(callback) {}
-
-void GetRunningApplicationsAsyncWorker::Execute() {
-  running_ = driver::GetRunningApplications();
-}
-
-void GetRunningApplicationsAsyncWorker::OnOK() {
-  Napi::Array result = Napi::Array::New(Env(), running_.size());
-  for (size_t i = 0; i < running_.size(); i++) {
-    result[i] = running_[i];
+  std::vector<std::string> running = driver::GetRunningApplications();
+  Napi::Array result = Napi::Array::New(env, running.size());
+  for (size_t i = 0; i < running.size(); i++) {
+    result[i] = running[i];
   }
 
-  Callback().Call({Env().Undefined(), result});
+  deferred.Resolve(result);
+  return deferred.Promise();
 }
 
-void GetRunningApplications(const Napi::CallbackInfo& info) {
-  GetRunningApplicationsAsyncWorker* worker =
-      new GetRunningApplicationsAsyncWorker(info[0].As<Napi::Function>());
-  worker->Queue();
-}
+Napi::Promise MouseDown(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-MouseDownAsyncWorker::MouseDownAsyncWorker(std::string button,
-                                           const Napi::Function& callback)
-    : Napi::AsyncWorker(callback), button_(button) {}
-
-void MouseDownAsyncWorker::Execute() {
 #if __linux__
   Display* display = XOpenDisplay(NULL);
-  driver::MouseDown(display, button_);
+  driver::MouseDown(display, info[0].As<Napi::String>().Utf8Value());
   XCloseDisplay(display);
 #else
-  driver::MouseDown(button_);
+  driver::MouseDown(info[0].As<Napi::String>().Utf8Value());
 #endif
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
 }
 
-void MouseDownAsyncWorker::OnOK() { Callback().Call({}); }
+Napi::Promise MouseUp(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-void MouseDown(const Napi::CallbackInfo& info) {
-  MouseDownAsyncWorker* worker = new MouseDownAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(), info[1].As<Napi::Function>());
-  worker->Queue();
-}
-
-MouseUpAsyncWorker::MouseUpAsyncWorker(std::string button,
-                                       const Napi::Function& callback)
-    : Napi::AsyncWorker(callback), button_(button) {}
-
-void MouseUpAsyncWorker::Execute() {
 #if __linux__
   Display* display = XOpenDisplay(NULL);
-  driver::MouseUp(display, button_);
+  driver::MouseUp(display, info[0].As<Napi::String>().Utf8Value());
   XCloseDisplay(display);
 #else
-  driver::MouseUp(button_);
+  driver::MouseUp(info[0].As<Napi::String>().Utf8Value());
 #endif
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
 }
 
-void MouseUpAsyncWorker::OnOK() { Callback().Call({}); }
+Napi::Promise PressKey(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-void MouseUp(const Napi::CallbackInfo& info) {
-  MouseUpAsyncWorker* worker = new MouseUpAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(), info[1].As<Napi::Function>());
-  worker->Queue();
-}
+  Napi::Array modifierArray = info[1].As<Napi::Array>();
+  int count = info[2].As<Napi::Number>();
 
-PressKeyAsyncWorker::PressKeyAsyncWorker(std::string key,
-                                         std::vector<std::string> modifiers,
-                                         int count,
-                                         const Napi::Function& callback)
-    : Napi::AsyncWorker(callback),
-      key_(key),
-      modifiers_(modifiers),
-      count_(count) {}
-
-void PressKeyAsyncWorker::Execute() {
-#ifdef __linux__
-  Display* display = XOpenDisplay(NULL);
-#endif
-
-  for (int i = 0; i < count_; i++) {
-#ifdef __linux__
-    driver::PressKey(display, key_, modifiers_);
-    usleep(100000);
-#else
-    driver::PressKey(key_, modifiers_);
-#endif
-  }
-
-#ifdef __linux__
-  XCloseDisplay(display);
-#endif
-}
-
-void PressKeyAsyncWorker::OnOK() { Callback().Call({}); }
-
-void PressKey(const Napi::CallbackInfo& info) {
   std::vector<std::string> modifiers;
-  Napi::Array array = info[1].As<Napi::Array>();
-  for (uint32_t i = 0; i < array.Length(); i++) {
-    Napi::Value e = array[i];
+  for (uint32_t i = 0; i < modifierArray.Length(); i++) {
+    Napi::Value e = modifierArray[i];
     modifiers.push_back(e.As<Napi::String>().Utf8Value());
   }
 
-  PressKeyAsyncWorker* worker = new PressKeyAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(), modifiers,
-      info[2].As<Napi::Number>(), info[3].As<Napi::Function>());
-  worker->Queue();
-}
-
-SetEditorStateAsyncWorker::SetEditorStateAsyncWorker(
-    std::string text, int cursor, int cursorEnd, const Napi::Function& callback)
-    : Napi::AsyncWorker(callback),
-      text_(text),
-      cursor_(cursor),
-      cursorEnd_(cursorEnd) {}
-
-void SetEditorStateAsyncWorker::Execute() {
-#ifdef __APPLE__
-  driver::SetEditorState(text_, cursor_, cursorEnd_);
-#endif
-}
-
-void SetEditorStateAsyncWorker::OnOK() { Callback().Call({}); }
-
-void SetEditorState(const Napi::CallbackInfo& info) {
-  SetEditorStateAsyncWorker* worker = new SetEditorStateAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(),
-      info[1].As<Napi::Number>().Int32Value(),
-      info[2].As<Napi::Number>().Int32Value(), info[3].As<Napi::Function>());
-  worker->Queue();
-}
-
-SetMouseLocationAsyncWorker::SetMouseLocationAsyncWorker(
-    const int x, const int y, const Napi::Function& callback)
-    : Napi::AsyncWorker(callback), x_(x), y_(y) {}
-
-void SetMouseLocationAsyncWorker::Execute() {
-  driver::SetMouseLocation(x_, y_);
-}
-
-void SetMouseLocationAsyncWorker::OnOK() { Callback().Call({}); }
-
-void SetMouseLocation(const Napi::CallbackInfo& info) {
-  SetMouseLocationAsyncWorker* worker = new SetMouseLocationAsyncWorker(
-      info[0].As<Napi::Number>().Int32Value(), info[1].As<Napi::Number>(),
-      info[2].As<Napi::Function>());
-  worker->Queue();
-}
-
-TypeTextAsyncWorker::TypeTextAsyncWorker(std::string text,
-                                         const Napi::Function& callback)
-    : Napi::AsyncWorker(callback), text_(text) {}
-
-void TypeTextAsyncWorker::Execute() {
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
 #endif
 
+  for (int i = 0; i < count; i++) {
+#ifdef __linux__
+    driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(),
+                     modifiers);
+    usleep(100000);
+#else
+    driver::PressKey(info[0].As<Napi::String>().Utf8Value(), modifiers);
+#endif
+  }
+
+#ifdef __linux__
+  XCloseDisplay(display);
+#endif
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
+}
+
+Napi::Promise SetEditorState(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+#ifdef __APPLE__
+  driver::SetEditorState(info[0].As<Napi::String>().Utf8Value(),
+                         info[1].As<Napi::Number>().Int32Value(),
+                         info[2].As<Napi::Number>().Int32Value());
+#endif
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
+}
+
+Napi::Promise SetMouseLocation(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+  driver::SetMouseLocation(info[0].As<Napi::Number>().Int32Value(),
+                           info[1].As<Napi::Number>().Int32Value());
+
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
+}
+
+Napi::Promise TypeText(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
   std::vector<std::string> modifiers;
-  for (char c : text_) {
+  std::string text = info[0].As<Napi::String>().Utf8Value();
+
+#ifdef __linux__
+  Display* display = XOpenDisplay(NULL);
+#endif
+
+  for (char c : text) {
 #ifdef __linux__
     driver::PressKey(display, std::string(1, c), modifiers);
 #else
@@ -342,14 +249,9 @@ void TypeTextAsyncWorker::Execute() {
 #ifdef __linux__
   XCloseDisplay(display);
 #endif
-}
 
-void TypeTextAsyncWorker::OnOK() { Callback().Call({}); }
-
-void TypeText(const Napi::CallbackInfo& info) {
-  TypeTextAsyncWorker* worker = new TypeTextAsyncWorker(
-      info[0].As<Napi::String>().Utf8Value(), info[1].As<Napi::Function>());
-  worker->Queue();
+  deferred.Resolve(env.Undefined());
+  return deferred.Promise();
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
