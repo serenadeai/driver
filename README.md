@@ -4,7 +4,7 @@
 
 A collection of utilities for implementing cross-platform low-level system automations. Check out the `test` directory for example usages.
 
-This module is used Serenade, the most powerful way to write code using natural speech. For more, see https://serenade.ai.
+This module is used by Serenade, the most powerful way to write code using natural speech. For more, see https://serenade.ai.
 
 ## Documentation
 

@@ -9,11 +9,20 @@ const run = async () => {
   console.log("Running a command");
   console.log(await driver.runShell("ls", ["-lah"]));
 
-  console.log('Typing "My password is Password123!"');
-  await driver.typeText("My password is Password123!");
+  console.log('Typing "My password is Password123!\\n"');
+  await driver.typeText("My password is Password123!\n");
 
-  console.log("Pressing a");
-  await driver.pressKey("a");
+  console.log("Pressing backspace 14 times");
+  await driver.pressKey("backspace", [], 14);
+
+  console.log('Typing "a\\nb\\n"');
+  await driver.typeText("a\nb\n");
+
+  console.log("Pressing c");
+  await driver.pressKey("c");
+
+  console.log("NOT pressing backspace");
+  await driver.pressKey("backspace", [], 0);
 
   if (process.platform == "darwin") {
     console.log("Pressing menu");
@@ -63,4 +72,5 @@ const run = async () => {
   }
 };
 
-run();
+console.log("Sleeping for 3 seconds so you can focus another app like TextEdit ...");
+setTimeout(() => run(), 3000);
