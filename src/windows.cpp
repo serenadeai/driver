@@ -148,6 +148,7 @@ void ToggleKey(const std::string& key, bool down) {
   // first, look for a hard-coded virtual key (e.g., for non-alphanumeric
   // characters)
   bool shift = false;
+  bool altgr = false;
   int virtualKey = VirtualKey(key);
 
   // if we didn't find one, then convert the key's character into a
@@ -158,10 +159,15 @@ void ToggleKey(const std::string& key, bool down) {
     int k = VkKeyScanA(key[0]);
     virtualKey = k & 0xff;
     shift = (((k >> 8) & 0xff) & 1) == 1;
+    altgr = (((k >> 8) & 0xff) & 4) == 1;
   }
 
   if (shift) {
     ToggleKey("shift", true);
+  }
+  if (altgr) {
+    ToggleKey("alt", true);
+    ToggleKey("control", true);
   }
 
   INPUT event;
@@ -172,6 +178,10 @@ void ToggleKey(const std::string& key, bool down) {
 
   if (shift) {
     ToggleKey("shift", false);
+  }
+  if (altgr) {
+    ToggleKey("control", false);
+    ToggleKey("alt", false);
   }
 }
 
@@ -194,9 +204,9 @@ int VirtualKey(const std::string& key) {
     return VK_BACK;
   } else if (key == "delete") {
     return VK_DELETE;
-  } else if (key == "tab") {
+  } else if (key == "tab" || key == "\t") {
     return VK_TAB;
-  } else if (key == "space") {
+  } else if (key == "space" || key == " ") {
     return VK_SPACE;
   } else if (key == "caps") {
     return VK_CAPITAL;
