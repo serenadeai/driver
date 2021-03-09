@@ -32,9 +32,10 @@ std::string GetRoleDescription(AXUIElementRef element);
 std::string GetRawTitle(AXUIElementRef element);
 std::vector<std::string> GetRunningApplications();
 std::string GetTitle(AXUIElementRef element);
+std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(
+    const std::string& key);
 bool HasActionName(AXUIElementRef element, CFStringRef name);
 bool IsButton(AXUIElementRef element);
-std::string KeyCodeToString(int keyCode, bool shift);
 void MouseDown(const std::string& button);
 void MouseUp(const std::string& button);
 void PressKey(const std::string& key,
@@ -44,6 +45,5 @@ void SetMouseLocation(int x, int y);
 void ToggleKey(const std::string& key,
                const std::vector<std::string>& modifiers, bool down);
 void ToLower(std::string& s);
-CGKeyCode VirtualKey(const std::string& key, bool shift);
 
 }  // namespace driver

@@ -379,6 +379,126 @@ std::string GetTitle(AXUIElementRef element) {
   return result;
 }
 
+std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(const std::string& key) {
+  std::tuple<CGKeyCode, bool, bool> result;
+  std::get<0>(result) = kVirtualKeyNotFound;
+
+  if (key == "enter" || key == "\n" || key == "return") {
+    std::get<0>(result) = CGKeyCode(kVK_Return);
+  } else if (key == "tab" || key == "\t") {
+    std::get<0>(result) = CGKeyCode(kVK_Tab);
+  } else if (key == "space" || key == " ") {
+    std::get<0>(result) = CGKeyCode(kVK_Space);
+  } else if (key == "backspace") {
+    std::get<0>(result) = CGKeyCode(kVK_Delete);
+  } else if (key == "delete") {
+    std::get<0>(result) = CGKeyCode(kVK_Delete);
+  } else if (key == "forwarddelete") {
+    std::get<0>(result) = CGKeyCode(kVK_ForwardDelete);
+  } else if (key == "escape") {
+    std::get<0>(result) = CGKeyCode(kVK_Escape);
+  } else if (key == "command" || key == "cmd") {
+    std::get<0>(result) = CGKeyCode(kVK_Command);
+  } else if (key == "caps") {
+    std::get<0>(result) = CGKeyCode(kVK_CapsLock);
+  } else if (key == "shift") {
+    std::get<0>(result) = CGKeyCode(kVK_Shift);
+  } else if (key == "option" || key == "alt") {
+    std::get<0>(result) = CGKeyCode(kVK_Option);
+  } else if (key == "alt") {
+    std::get<0>(result) = CGKeyCode(kVK_Option);
+  } else if (key == "control" || key == "ctrl") {
+    std::get<0>(result) = CGKeyCode(kVK_Control);
+  } else if (key == "function" || key == "fn") {
+    std::get<0>(result) = CGKeyCode(kVK_Function);
+  } else if (key == "home") {
+    std::get<0>(result) = CGKeyCode(kVK_Home);
+  } else if (key == "pageup") {
+    std::get<0>(result) = CGKeyCode(kVK_PageUp);
+  } else if (key == "end") {
+    std::get<0>(result) = CGKeyCode(kVK_End);
+  } else if (key == "pagedown") {
+    std::get<0>(result) = CGKeyCode(kVK_PageDown);
+  } else if (key == "left") {
+    std::get<0>(result) = CGKeyCode(kVK_LeftArrow);
+  } else if (key == "right") {
+    std::get<0>(result) = CGKeyCode(kVK_RightArrow);
+  } else if (key == "down") {
+    std::get<0>(result) = CGKeyCode(kVK_DownArrow);
+  } else if (key == "up") {
+    std::get<0>(result) = CGKeyCode(kVK_UpArrow);
+  } else if (key == "f1") {
+    std::get<0>(result) = CGKeyCode(kVK_F1);
+  } else if (key == "f2") {
+    std::get<0>(result) = CGKeyCode(kVK_F2);
+  } else if (key == "f3") {
+    std::get<0>(result) = CGKeyCode(kVK_F3);
+  } else if (key == "f4") {
+    std::get<0>(result) = CGKeyCode(kVK_F4);
+  } else if (key == "f5") {
+    std::get<0>(result) = CGKeyCode(kVK_F5);
+  } else if (key == "f6") {
+    std::get<0>(result) = CGKeyCode(kVK_F6);
+  } else if (key == "f7") {
+    std::get<0>(result) = CGKeyCode(kVK_F7);
+  } else if (key == "f8") {
+    std::get<0>(result) = CGKeyCode(kVK_F8);
+  } else if (key == "f9") {
+    std::get<0>(result) = CGKeyCode(kVK_F9);
+  } else if (key == "f10") {
+    std::get<0>(result) = CGKeyCode(kVK_F10);
+  } else if (key == "f11") {
+    std::get<0>(result) = CGKeyCode(kVK_F11);
+  } else if (key == "f12") {
+    std::get<0>(result) = CGKeyCode(kVK_F12);
+  }
+
+  TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
+  CFDataRef layoutData = static_cast<CFDataRef>(
+      TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData));
+  const UCKeyboardLayout* keyboardLayout =
+      reinterpret_cast<const UCKeyboardLayout*>(CFDataGetBytePtr(layoutData));
+
+  if (std::get<0>(result) == kVirtualKeyNotFound) {
+    for (int shift = 0; shift < 2; shift++) {
+      for (int altgr = 0; altgr < 2; altgr++) {
+        for (int i = 0; i < 128; i++) {
+          UInt32 keysDown = 0;
+          UniChar chars[4];
+          UniCharCount realLength;
+          UInt32 modifiers = 0;
+          if (shift == 1) {
+            modifiers |= shiftKey >> 8;
+          }
+          if (altgr == 1) {
+            modifiers |= optionKey >> 8;
+          }
+
+          UCKeyTranslate(keyboardLayout, CGKeyCode(i), kUCKeyActionDisplay, modifiers,
+                         LMGetKbdType(), kUCKeyTranslateNoDeadKeysBit, &keysDown,
+                         sizeof(chars) / sizeof(chars[0]), &realLength, chars);
+
+          NSString* s =
+              static_cast<NSString*>(CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1));
+          if (std::string([s UTF8String]) == key) {
+            std::get<0>(result) = CGKeyCode(i);
+            std::get<1>(result) = shift == 1;
+            std::get<2>(result) = altgr == 1;
+            CFRelease(s);
+            CFRelease(currentKeyboard);
+            return result;
+          }
+
+          CFRelease(s);
+        }
+      }
+    }
+  }
+
+  CFRelease(currentKeyboard);
+  return result;
+}
+
 bool HasActionName(AXUIElementRef element, CFStringRef name) {
   CFArrayRef names = NULL;
   AXUIElementCopyActionNames(element, &names);
@@ -400,28 +520,6 @@ bool HasActionName(AXUIElementRef element, CFStringRef name) {
 bool IsButton(AXUIElementRef element) {
   return (GetRoleDescription(element) == "button" && GetTitle(element) != "") ||
          HasActionName(element, kAXOpenAction);
-}
-
-std::string KeyCodeToString(int keyCode, bool shift) {
-  TISInputSourceRef currentKeyboard = TISCopyCurrentKeyboardInputSource();
-  CFDataRef layoutData = static_cast<CFDataRef>(
-      TISGetInputSourceProperty(currentKeyboard, kTISPropertyUnicodeKeyLayoutData));
-  const UCKeyboardLayout* keyboardLayout =
-      reinterpret_cast<const UCKeyboardLayout*>(CFDataGetBytePtr(layoutData));
-
-  UInt32 keysDown = 0;
-  UniChar chars[4];
-  UniCharCount realLength;
-  UInt32 modifiers = shift ? 1 << 1 : 0;
-  UCKeyTranslate(keyboardLayout, keyCode, kUCKeyActionDisplay, modifiers, LMGetKbdType(),
-                 kUCKeyTranslateNoDeadKeysBit, &keysDown, sizeof(chars) / sizeof(chars[0]),
-                 &realLength, chars);
-
-  CFRelease(currentKeyboard);
-  NSString* s = static_cast<NSString*>(CFStringCreateWithCharacters(kCFAllocatorDefault, chars, 1));
-  std::string result([s UTF8String]);
-  CFRelease(s);
-  return result;
 }
 
 void MouseDown(const std::string& button) {
@@ -489,19 +587,18 @@ void SetMouseLocation(int x, int y) {
 
 void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down) {
   std::vector<std::string> adjustedModifiers = modifiers;
-  CGKeyCode virtualKey = VirtualKey(key, false);
-  if (virtualKey == kVirtualKeyNotFound) {
-    virtualKey = VirtualKey(key, true);
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "shift") ==
-        adjustedModifiers.end()) {
-      adjustedModifiers.push_back("shift");
-    }
+  std::tuple<CGKeyCode, bool, bool> keycode = GetVirtualKeyAndModifiers(key);
+  if (std::get<1>(keycode)) {
+    adjustedModifiers.push_back("shift");
+  }
+  if (std::get<2>(keycode)) {
+    adjustedModifiers.push_back("option");
   }
 
   CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
-  CGEventRef event = CGEventCreateKeyboardEvent(source, virtualKey, down);
+  CGEventRef event = CGEventCreateKeyboardEvent(source, std::get<0>(keycode), down);
 
-  if (virtualKey == kVirtualKeyNotFound) {
+  if (std::get<0>(keycode) == kVirtualKeyNotFound) {
     unichar c[1];
     c[0] = [[NSString stringWithFormat:@"%c", key[0]] characterAtIndex:0];
     CGEventKeyboardSetUnicodeString(event, 1, c);
@@ -555,88 +652,6 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
 
 void ToLower(std::string& s) {
   std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
-}
-
-CGKeyCode VirtualKey(const std::string& key, bool shift) {
-  if (key == "enter" || key == "\n") {
-    return CGKeyCode(kVK_Return);
-  } else if (key == "return") {
-    return CGKeyCode(kVK_Return);
-  } else if (key == "tab") {
-    return CGKeyCode(kVK_Tab);
-  } else if (key == "space") {
-    return CGKeyCode(kVK_Space);
-  } else if (key == "backspace") {
-    return CGKeyCode(kVK_Delete);
-  } else if (key == "delete") {
-    return CGKeyCode(kVK_Delete);
-  } else if (key == "forwarddelete") {
-    return CGKeyCode(kVK_ForwardDelete);
-  } else if (key == "escape") {
-    return CGKeyCode(kVK_Escape);
-  } else if (key == "command" || key == "cmd") {
-    return CGKeyCode(kVK_Command);
-  } else if (key == "caps") {
-    return CGKeyCode(kVK_CapsLock);
-  } else if (key == "shift") {
-    return CGKeyCode(kVK_Shift);
-  } else if (key == "option" || key == "alt") {
-    return CGKeyCode(kVK_Option);
-  } else if (key == "alt") {
-    return CGKeyCode(kVK_Option);
-  } else if (key == "control" || key == "ctrl") {
-    return CGKeyCode(kVK_Control);
-  } else if (key == "function" || key == "fn") {
-    return CGKeyCode(kVK_Function);
-  } else if (key == "home") {
-    return CGKeyCode(kVK_Home);
-  } else if (key == "pageup") {
-    return CGKeyCode(kVK_PageUp);
-  } else if (key == "end") {
-    return CGKeyCode(kVK_End);
-  } else if (key == "pagedown") {
-    return CGKeyCode(kVK_PageDown);
-  } else if (key == "left") {
-    return CGKeyCode(kVK_LeftArrow);
-  } else if (key == "right") {
-    return CGKeyCode(kVK_RightArrow);
-  } else if (key == "down") {
-    return CGKeyCode(kVK_DownArrow);
-  } else if (key == "up") {
-    return CGKeyCode(kVK_UpArrow);
-  } else if (key == "f1") {
-    return CGKeyCode(kVK_F1);
-  } else if (key == "f2") {
-    return CGKeyCode(kVK_F2);
-  } else if (key == "f3") {
-    return CGKeyCode(kVK_F3);
-  } else if (key == "f4") {
-    return CGKeyCode(kVK_F4);
-  } else if (key == "f5") {
-    return CGKeyCode(kVK_F5);
-  } else if (key == "f6") {
-    return CGKeyCode(kVK_F6);
-  } else if (key == "f7") {
-    return CGKeyCode(kVK_F7);
-  } else if (key == "f8") {
-    return CGKeyCode(kVK_F8);
-  } else if (key == "f9") {
-    return CGKeyCode(kVK_F9);
-  } else if (key == "f10") {
-    return CGKeyCode(kVK_F10);
-  } else if (key == "f11") {
-    return CGKeyCode(kVK_F11);
-  } else if (key == "f12") {
-    return CGKeyCode(kVK_F12);
-  }
-
-  for (int i = 0; i < 128; i++) {
-    if (key == KeyCodeToString(i, shift)) {
-      return CGKeyCode(i);
-    }
-  }
-
-  return CGKeyCode(kVirtualKeyNotFound);
 }
 
 }  // namespace driver

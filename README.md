@@ -136,3 +136,15 @@ Type a string of text.
 
 * `text <string>` Text to type.
 * Returns `<Promise>` Fulfills with `undefined` upon success.
+
+## Building & Testing
+
+To build the library, simply run:
+
+    yarn
+
+Then, to test, you can run:
+
+    node test/test.js
+
+That test file will simulate a bunch of keystrokes, so if your computer looks like it's going crazy, don't worry. Probably.
