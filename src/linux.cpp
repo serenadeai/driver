@@ -84,11 +84,10 @@ std::vector<Window> GetAllWindows(Display* display) {
   return result;
 }
 
-std::tuple<int, bool> GetKeycodeAndModifiers(Display* display,
-                                             const std::string& key) {
-  std::tuple<int, bool> result;
+std::tuple<int, bool, bool> GetKeycodeAndModifiers(Display* display,
+                                                   const std::string& key) {
+  std::tuple<int, bool, bool> result;
   std::get<0>(result) = -1;
-  std::get<1>(result) = false;
 
   // convert our key names to the corresponding x11 key
   std::string mapped = key;
@@ -98,6 +97,8 @@ std::tuple<int, bool> GetKeycodeAndModifiers(Display* display,
     mapped = "Control_L";
   } else if (key == "alt") {
     mapped = "Alt_L";
+  } else if (key == "altgr") {
+    mapped = "ISO_Level3_Shift";
   } else if (key == "meta" || key == "windows" || key == "win") {
     mapped = "Super_L";
   } else if (key == "shift") {
@@ -136,7 +137,7 @@ std::tuple<int, bool> GetKeycodeAndModifiers(Display* display,
     mapped = "equal";
   } else if (key == "backspace") {
     mapped = "BackSpace";
-  } else if (key == "tab") {
+  } else if (key == "tab" || key == "\t") {
     mapped = "Tab";
   } else if (key == "[") {
     mapped = "bracketleft";
@@ -174,7 +175,7 @@ std::tuple<int, bool> GetKeycodeAndModifiers(Display* display,
     mapped = "slash";
   } else if (key == "?") {
     mapped = "question";
-  } else if (key == " ") {
+  } else if (key == "space" || key == " ") {
     mapped = "space";
   } else if (key == "home") {
     mapped = "Home";
@@ -228,19 +229,30 @@ std::tuple<int, bool> GetKeycodeAndModifiers(Display* display,
   XkbStateRec state;
   XkbGetState(display, XkbUseCoreKbd, &state);
   for (int i = 0; i < 256; i++) {
-    for (int modifier = 0; modifier < 2; modifier++) {
-      KeySym k;
-      XkbLookupKeySym(display, i, (state.group << 13) | modifier, NULL, &k);
-      const char* s = XKeysymToString(k);
-      if (s == NULL) {
-        continue;
-      }
+    for (int shift = 0; shift < 2; shift++) {
+      for (int altgr = 0; altgr < 2; altgr++) {
+        int modifier = state.group << 13;
+        if (shift == 1) {
+          modifier |= ShiftMask;
+        }
+        if (altgr == 1) {
+          modifier |= Mod5Mask;
+        }
 
-      std::string name(s);
-      if (mapped == name) {
-        std::get<0>(result) = i;
-        std::get<1>(result) = modifier == 1;
-        return result;
+        KeySym k;
+        XkbLookupKeySym(display, i, modifier, NULL, &k);
+        const char* s = XKeysymToString(k);
+        if (s == NULL) {
+          continue;
+        }
+
+        std::string name(s);
+        if (mapped == name) {
+          std::get<0>(result) = i;
+          std::get<1>(result) = shift == 1;
+          std::get<2>(result) = altgr == 1;
+          return result;
+        }
       }
     }
   }
@@ -318,10 +330,11 @@ void MouseUp(Display* display, const std::string& button) {
 
 void PressKey(Display* display, std::string key,
               std::vector<std::string> modifiers) {
-  std::tuple<int, bool> keycodeAndModifers =
+  std::tuple<int, bool, bool> keycodeAndModifiers =
       GetKeycodeAndModifiers(display, key);
-  int keycode = std::get<0>(keycodeAndModifers);
-  bool shift = std::get<1>(keycodeAndModifers);
+  int keycode = std::get<0>(keycodeAndModifiers);
+  bool shift = std::get<1>(keycodeAndModifiers);
+  bool altgr = std::get<2>(keycodeAndModifiers);
 
   if (keycode == -1) {
     return;
@@ -329,6 +342,9 @@ void PressKey(Display* display, std::string key,
 
   if (shift) {
     ToggleKey(display, "shift", true);
+  }
+  if (altgr) {
+    ToggleKey(display, "altgr", true);
   }
 
   for (std::string modifier : modifiers) {
@@ -342,6 +358,9 @@ void PressKey(Display* display, std::string key,
     ToggleKey(display, modifier, false);
   }
 
+  if (altgr) {
+    ToggleKey(display, "altgr", false);
+  }
   if (shift) {
     ToggleKey(display, "shift", false);
   }
@@ -370,9 +389,9 @@ void SetMouseLocation(int x, int y) {
 }
 
 void ToggleKey(Display* display, const std::string& key, bool down) {
-  std::tuple<int, bool> keycodeAndModifers =
+  std::tuple<int, bool, bool> keycodeAndModifiers =
       GetKeycodeAndModifiers(display, key);
-  int keycode = std::get<0>(keycodeAndModifers);
+  int keycode = std::get<0>(keycodeAndModifiers);
   if (keycode == -1) {
     return;
   }
