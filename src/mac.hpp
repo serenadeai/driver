@@ -25,8 +25,7 @@ std::string GetActiveApplication();
 void GetClickableButtons(AXUIElementRef element,
                          std::vector<std::string>& result);
 std::vector<std::string> GetClickableButtons();
-int GetEditorCursor();
-std::string GetEditorSource();
+std::tuple<std::string, int> GetEditorState();
 std::tuple<int, int> GetMouseLocation();
 std::string GetRoleDescription(AXUIElementRef element);
 std::string GetRawTitle(AXUIElementRef element);

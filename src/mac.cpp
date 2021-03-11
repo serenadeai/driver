@@ -253,37 +253,53 @@ std::vector<std::string> GetClickableButtons() {
   return buttons;
 }
 
-int GetEditorCursor() {
+std::tuple<std::string, int> GetEditorState() {
+  std::tuple<std::string, int> result;
+  std::get<0>(result) = "";
+  std::get<1>(result) = 0;
+
   AXUIElementRef field = CreateActiveTextFieldRef();
   if (field == NULL) {
-    return 0;
+    NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
+    [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
+    NSString* previous = @"";
+    if (pasteboard.pasteboardItems.count > 0) {
+      previous = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
+    }
+
+    PressKey("left", std::vector<std::string>{"command", "shift"});
+    PressKey("up", std::vector<std::string>{"command", "shift"});
+    PressKey("c", std::vector<std::string>{"command"});
+    usleep(10000);
+    PressKey("right", std::vector<std::string>{});
+    NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
+
+    PressKey("right", std::vector<std::string>{"command", "shift"});
+    PressKey("down", std::vector<std::string>{"command", "shift"});
+    PressKey("c", std::vector<std::string>{"command"});
+    usleep(10000);
+    PressKey("left", std::vector<std::string>{});
+    NSString* right = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
+
+    [pasteboard setString:previous forType:NSPasteboardTypeString];
+    std::get<0>(result) = [[NSString stringWithFormat:@"%@%@", left, right] UTF8String];
+    std::get<1>(result) = left.length;
+    return result;
   }
 
   AXValueRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
-  if (value == NULL) {
-    CFRelease(field);
-    return 0;
+  if (value != NULL) {
+    CFRange range;
+    AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
+    std::get<1>(result) = range.location + range.length;
+    CFRelease(value);
   }
 
-  CFRange range;
-  AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
-  int result = range.location + range.length;
+  std::get<0>(result) = GetTitle(field);
   CFRelease(field);
-  CFRelease(value);
   return result;
-}
-
-std::string GetEditorSource() {
-  AXUIElementRef field = CreateActiveTextFieldRef();
-  if (field == NULL) {
-    return "";
-  }
-
-  std::string title = GetTitle(field);
-  CFRelease(field);
-  return title;
 }
 
 std::tuple<int, int> GetMouseLocation() {
