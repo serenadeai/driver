@@ -107,8 +107,12 @@ std::string GetClipboard(Display* display, Window window) {
     XGetWindowProperty(display, window, property, 0, LONG_MAX / 4, False,
                        AnyPropertyType, &format, &dataBits, &dataSize,
                        &dataTail, (unsigned char**)&data);
-    if (format != incr) {
+
+    if (data != NULL && format != incr) {
       result = std::string(data);
+    }
+
+    if (data != NULL) {
       XFree(data);
     }
   }
