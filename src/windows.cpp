@@ -6,6 +6,8 @@
 #include <winuser.h>
 
 #include <algorithm>
+#include <iostream>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -63,6 +65,62 @@ std::string GetActiveApplication() {
   return ProcessName(active);
 }
 
+std::string GetClipboard() {
+  if (!OpenClipboard(NULL)) {
+    return "";
+  }
+
+  HANDLE data = GetClipboardData(CF_TEXT);
+  if (data == NULL) {
+    return "";
+  }
+
+  char* text = static_cast<char*>(GlobalLock(data));
+  if (text == NULL) {
+    return "";
+  }
+
+  std::string result(text);
+  GlobalUnlock(data);
+  CloseClipboard();
+  return result;
+}
+
+std::tuple<std::string, int> GetEditorState(bool fallback) {
+  std::tuple<std::string, int> result;
+  std::get<0>(result) = "";
+  std::get<1>(result) = 0;
+  if (!fallback) {
+    return result;
+  }
+
+  std::string previous = GetClipboard();
+  PressKey("home", std::vector<std::string>{"control", "shift"});
+  PressKey("c", std::vector<std::string>{"control"});
+  Sleep(10);
+  PressKey("right", std::vector<std::string>{});
+  std::string left = GetClipboard();
+
+  PressKey("end", std::vector<std::string>{"control", "shift"});
+  PressKey("c", std::vector<std::string>{"control"});
+  Sleep(10);
+  PressKey("left", std::vector<std::string>{});
+  std::string right = GetClipboard();
+
+  if (previous != "") {
+    const size_t n = previous.length() + 1;
+    HGLOBAL data = GlobalAlloc(GMEM_MOVEABLE, n);
+    memcpy(GlobalLock(data), previous.c_str(), n);
+    GlobalUnlock(data);
+    EmptyClipboard();
+    SetClipboardData(CF_UNICODETEXT, data);
+  }
+
+  std::get<0>(result) = left + right;
+  std::get<1>(result) = left.length();
+  return result;
+}
+
 std::tuple<int, int> GetMouseLocation() {
   POINT point;
   GetCursorPos(&point);
@@ -96,6 +154,89 @@ BOOL CALLBACK GetRunningWindows(HWND window, LPARAM data) {
   }
 
   return TRUE;
+}
+
+std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(const std::string& key) {
+  std::tuple<int, bool, bool, int> result;
+  std::get<0>(result) = -1;
+
+  if (key == "left") {
+    std::get<0>(result) = VK_LEFT;
+  } else if (key == "right") {
+    std::get<0>(result) = VK_RIGHT;
+  } else if (key == "up") {
+    std::get<0>(result) = VK_UP;
+  } else if (key == "down") {
+    std::get<0>(result) = VK_DOWN;
+  } else if (key == "control" || key == "ctrl") {
+    std::get<0>(result) = VK_CONTROL;
+  } else if (key == "alt") {
+    std::get<0>(result) = VK_MENU;
+  } else if (key == "shift") {
+    std::get<0>(result) = VK_SHIFT;
+  } else if (key == "backspace") {
+    std::get<0>(result) = VK_BACK;
+  } else if (key == "delete") {
+    std::get<0>(result) = VK_DELETE;
+  } else if (key == "tab" || key == "\t") {
+    std::get<0>(result) = VK_TAB;
+  } else if (key == "space" || key == " ") {
+    std::get<0>(result) = VK_SPACE;
+  } else if (key == "caps") {
+    std::get<0>(result) = VK_CAPITAL;
+  } else if (key == "meta" || key == "win" || key == "windows") {
+    std::get<0>(result) = VK_LWIN;
+  } else if (key == "escape") {
+    std::get<0>(result) = VK_ESCAPE;
+  } else if (key == "enter" || key == "return" || key == "\n") {
+    std::get<0>(result) = VK_RETURN;
+  } else if (key == "pageup") {
+    std::get<0>(result) = VK_PRIOR;
+  } else if (key == "pagedown") {
+    std::get<0>(result) = VK_NEXT;
+  } else if (key == "home") {
+    std::get<0>(result) = VK_HOME;
+    std::get<3>(result) = 1;
+  } else if (key == "end") {
+    std::get<0>(result) = VK_END;
+    std::get<3>(result) = 1;
+  } else if (key == "f1") {
+    std::get<0>(result) = VK_F1;
+  } else if (key == "f2") {
+    std::get<0>(result) = VK_F2;
+  } else if (key == "f3") {
+    std::get<0>(result) = VK_F3;
+  } else if (key == "f4") {
+    std::get<0>(result) = VK_F4;
+  } else if (key == "f5") {
+    std::get<0>(result) = VK_F5;
+  } else if (key == "f6") {
+    std::get<0>(result) = VK_F6;
+  } else if (key == "f7") {
+    std::get<0>(result) = VK_F7;
+  } else if (key == "f8") {
+    std::get<0>(result) = VK_F8;
+  } else if (key == "f9") {
+    std::get<0>(result) = VK_F9;
+  } else if (key == "f10") {
+    std::get<0>(result) = VK_F10;
+  } else if (key == "f11") {
+    std::get<0>(result) = VK_F11;
+  } else if (key == "f12") {
+    std::get<0>(result) = VK_F12;
+  }
+
+  // convert the key's character into a keyboard-indepdent virtual key
+  if (std::get<0>(result) == -1) {
+    // this function returns the key in the low-order byte and whether or not
+    // shift & altgr are required in the high-order byte
+    int k = VkKeyScanA(key[0]);
+    std::get<0>(result) = k & 0xff;
+    std::get<1>(result) = ((k >> 8) & 1) == 1;
+    std::get<2>(result) = (k >> 9) == 3;
+  }
+
+  return result;
 }
 
 void MouseDown(const std::string& button) {
@@ -147,20 +288,9 @@ void SetMouseLocation(int x, int y) { SetCursorPos(x, y); }
 void ToggleKey(const std::string& key, bool down) {
   // first, look for a hard-coded virtual key (e.g., for non-alphanumeric
   // characters)
-  bool shift = false;
-  bool altgr = false;
-  int virtualKey = VirtualKey(key);
-
-  // if we didn't find one, then convert the key's character into a
-  // keyboard-indepdent virutal key
-  if (virtualKey == -1) {
-    // this function returns the key in the low-order byte and whether or not
-    // shift is required in the high-order byte
-    int k = VkKeyScanA(key[0]);
-    virtualKey = k & 0xff;
-    shift = (((k >> 8) & 0xff) & 1) == 1;
-    altgr = (((k >> 8) & 0xff) & 4) == 1;
-  }
+  std::tuple<int, bool, bool, int> keycode = GetVirtualKeyAndModifiers(key);
+  bool shift = std::get<1>(keycode);
+  bool altgr = std::get<2>(keycode);
 
   if (shift) {
     ToggleKey("shift", true);
@@ -172,8 +302,8 @@ void ToggleKey(const std::string& key, bool down) {
 
   INPUT event;
   event.type = INPUT_KEYBOARD;
-  event.ki.wVk = virtualKey;
-  event.ki.dwFlags = down ? 0 : KEYEVENTF_KEYUP;
+  event.ki.wVk = std::get<0>(keycode);
+  event.ki.dwFlags = (down ? 0 : KEYEVENTF_KEYUP) | std::get<3>(keycode);
   SendInput(1, &event, sizeof(INPUT));
 
   if (shift) {
@@ -185,71 +315,4 @@ void ToggleKey(const std::string& key, bool down) {
   }
 }
 
-int VirtualKey(const std::string& key) {
-  if (key == "left") {
-    return VK_LEFT;
-  } else if (key == "right") {
-    return VK_RIGHT;
-  } else if (key == "up") {
-    return VK_UP;
-  } else if (key == "down") {
-    return VK_DOWN;
-  } else if (key == "control" || key == "ctrl") {
-    return VK_CONTROL;
-  } else if (key == "alt") {
-    return VK_MENU;
-  } else if (key == "shift") {
-    return VK_SHIFT;
-  } else if (key == "backspace") {
-    return VK_BACK;
-  } else if (key == "delete") {
-    return VK_DELETE;
-  } else if (key == "tab" || key == "\t") {
-    return VK_TAB;
-  } else if (key == "space" || key == " ") {
-    return VK_SPACE;
-  } else if (key == "caps") {
-    return VK_CAPITAL;
-  } else if (key == "meta" || key == "win" || key == "windows") {
-    return VK_LWIN;
-  } else if (key == "escape") {
-    return VK_ESCAPE;
-  } else if (key == "enter" || key == "return" || key == "\n") {
-    return VK_RETURN;
-  } else if (key == "pageup") {
-    return VK_PRIOR;
-  } else if (key == "pagedown") {
-    return VK_NEXT;
-  } else if (key == "home") {
-    return VK_HOME;
-  } else if (key == "end") {
-    return VK_END;
-  } else if (key == "f1") {
-    return VK_F1;
-  } else if (key == "f2") {
-    return VK_F2;
-  } else if (key == "f3") {
-    return VK_F3;
-  } else if (key == "f4") {
-    return VK_F4;
-  } else if (key == "f5") {
-    return VK_F5;
-  } else if (key == "f6") {
-    return VK_F6;
-  } else if (key == "f7") {
-    return VK_F7;
-  } else if (key == "f8") {
-    return VK_F8;
-  } else if (key == "f9") {
-    return VK_F9;
-  } else if (key == "f10") {
-    return VK_F10;
-  } else if (key == "f11") {
-    return VK_F11;
-  } else if (key == "f12") {
-    return VK_F12;
-  }
-
-  return -1;
-}
 }  // namespace driver

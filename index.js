@@ -73,8 +73,8 @@ exports.getClickableButtons = () => {
   return lib.getClickableButtons();
 };
 
-exports.getEditorState = () => {
-  return lib.getEditorState();
+exports.getEditorState = (fallback) => {
+  return lib.getEditorState(fallback);
 };
 
 exports.getInstalledApplications = async () => {

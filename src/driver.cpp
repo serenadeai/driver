@@ -96,15 +96,11 @@ Napi::Promise GetEditorState(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-#ifdef __APPLE__
-  std::tuple<std::string, int> state = driver::GetEditorState();
+  std::tuple<std::string, int> state = driver::GetEditorState(info[0].As<Napi::Boolean>());
   Napi::Object result = Napi::Object::New(env);
   result.Set("text", std::get<0>(state));
   result.Set("cursor", std::get<1>(state));
   deferred.Resolve(result);
-#else
-  deferred.Resolve(env.Undefined());
-#endif
 
   return deferred.Promise();
 }
