@@ -253,13 +253,13 @@ std::vector<std::string> GetClickableButtons() {
   return buttons;
 }
 
-std::tuple<std::string, int> GetEditorState() {
+std::tuple<std::string, int> GetEditorState(bool fallback) {
   std::tuple<std::string, int> result;
   std::get<0>(result) = "";
   std::get<1>(result) = 0;
 
   AXUIElementRef field = CreateActiveTextFieldRef();
-  if (field == NULL) {
+  if (fallback && field == NULL) {
     NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
     [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
     NSString* previous = @"";
