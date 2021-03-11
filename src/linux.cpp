@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <climits>
 #include <fstream>
 #include <streambuf>
 #include <string>
@@ -81,6 +82,63 @@ std::vector<Window> GetAllWindows(Display* display) {
   }
 
   XFree(windows);
+  return result;
+}
+
+std::string GetClipboard(Display* display, Window window) {
+  Atom buffer = XInternAtom(display, "CLIPBOARD", False);
+  Atom format = XInternAtom(display, "STRING", False);
+  Atom property = XInternAtom(display, "XSEL_DATA", False);
+  Atom incr = XInternAtom(display, "INCR", False);
+
+  std::string result = "";
+  char* data = NULL;
+  int dataBits = 0;
+  unsigned long dataSize = 0;
+  unsigned long dataTail = 0;
+  XEvent event;
+  XConvertSelection(display, buffer, format, property, window, CurrentTime);
+  do {
+    XNextEvent(display, &event);
+  } while (event.type != SelectionNotify ||
+           event.xselection.selection != buffer);
+
+  if (event.xselection.property) {
+    XGetWindowProperty(display, window, property, 0, LONG_MAX / 4, False,
+                       AnyPropertyType, &format, &dataBits, &dataSize,
+                       &dataTail, (unsigned char**)&data);
+    if (format != incr) {
+      result = std::string(data);
+      XFree(data);
+    }
+  }
+
+  return result;
+}
+
+std::tuple<std::string, int> GetEditorState(Display* display, bool fallback) {
+  std::tuple<std::string, int> result;
+  if (!fallback) {
+    return result;
+  }
+
+  unsigned long color = BlackPixel(display, DefaultScreen(display));
+  Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0,
+                                      1, 1, 0, color, color);
+  PressKey(display, "home", std::vector<std::string>{"control", "shift"});
+  PressKey(display, "c", std::vector<std::string>{"control"});
+  usleep(10000);
+  PressKey(display, "right", std::vector<std::string>{});
+  std::string left = GetClipboard(display, window);
+
+  PressKey(display, "end", std::vector<std::string>{"control", "shift"});
+  PressKey(display, "c", std::vector<std::string>{"control"});
+  usleep(10000);
+  PressKey(display, "left", std::vector<std::string>{});
+  std::string right = GetClipboard(display, window);
+
+  std::get<0>(result) = left + right;
+  std::get<1>(result) = left.length();
   return result;
 }
 

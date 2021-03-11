@@ -74,6 +74,10 @@ exports.getClickableButtons = () => {
 };
 
 exports.getEditorState = (fallback) => {
+  if (!fallback) {
+    fallback = false;
+  }
+
   return lib.getEditorState(fallback);
 };
 

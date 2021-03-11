@@ -96,7 +96,16 @@ Napi::Promise GetEditorState(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-  std::tuple<std::string, int> state = driver::GetEditorState(info[0].As<Napi::Boolean>());
+#ifdef __linux__
+  Display* display = XOpenDisplay(NULL);
+  std::tuple<std::string, int> state =
+      driver::GetEditorState(display, info[0].As<Napi::Boolean>());
+  XCloseDisplay(display);
+#else
+  std::tuple<std::string, int> state =
+      driver::GetEditorState(info[0].As<Napi::Boolean>());
+#endif
+
   Napi::Object result = Napi::Object::New(env);
   result.Set("text", std::get<0>(state));
   result.Set("cursor", std::get<1>(state));

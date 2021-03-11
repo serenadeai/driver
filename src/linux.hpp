@@ -11,6 +11,8 @@ void Click(Display* display, const std::string& button, int count);
 void FocusApplication(const std::string& application);
 std::string GetActiveApplication();
 std::vector<Window> GetAllWindows(Display* display);
+std::string GetClipboard(Display* display, Window window);
+std::tuple<std::string, int> GetEditorState(Display* display, bool fallback);
 std::tuple<int, bool, bool> GetKeycodeAndModifiers(Display* display,
                                                    const std::string& key);
 std::tuple<int, int> GetMouseLocation();
