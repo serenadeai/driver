@@ -22,6 +22,7 @@ CFArrayRef CreateChildrenArray(AXUIElementRef element);
 void Describe(AXUIElementRef element);
 void FocusApplication(const std::string& application);
 std::string GetActiveApplication();
+int GetActivePid();
 void GetClickableButtons(AXUIElementRef element,
                          std::vector<std::string>& result);
 std::vector<std::string> GetClickableButtons();

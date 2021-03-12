@@ -40,6 +40,10 @@ void Click(const std::string& button, int count) {
 
 bool ClickButton(AXUIElementRef element, const std::string& button, int count) {
   CFArrayRef children = CreateChildrenArray(element);
+  if (children == NULL) {
+    return false;
+  }
+
   int n = CFArrayGetCount(children);
   for (CFIndex i = 0; i < 20 && i < n; i++) {
     AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
@@ -74,6 +78,10 @@ bool ClickButton(AXUIElementRef element, const std::string& button, int count) {
 }
 
 void ClickButton(const std::string& button, int count) {
+  if (!AXIsProcessTrustedWithOptions(NULL)) {
+    return;
+  }
+
   AXUIElementRef window = CreateActiveWindowRef();
   if (window == NULL) {
     return;
@@ -85,12 +93,16 @@ void ClickButton(const std::string& button, int count) {
 }
 
 AXUIElementRef CreateActiveWindowRef() {
-  NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
-  if (running == NULL) {
+  int pid = GetActivePid();
+  if (pid == -1) {
     return NULL;
   }
 
-  AXUIElementRef app = AXUIElementCreateApplication(running.processIdentifier);
+  AXUIElementRef app = AXUIElementCreateApplication(pid);
+  if (app == NULL) {
+    return NULL;
+  }
+
   AXUIElementRef window = NULL;
   AXUIElementCopyAttributeValue(app, kAXFocusedWindowAttribute,
                                 reinterpret_cast<CFTypeRef*>(&window));
@@ -103,12 +115,12 @@ AXUIElementRef CreateActiveWindowRef() {
 }
 
 AXUIElementRef CreateActiveTextFieldRef() {
-  NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
-  if (running == NULL) {
+  int pid = GetActivePid();
+  if (pid == -1) {
     return NULL;
   }
 
-  AXUIElementRef app = AXUIElementCreateApplication(running.processIdentifier);
+  AXUIElementRef app = AXUIElementCreateApplication(pid);
   if (app == NULL) {
     return NULL;
   }
@@ -131,10 +143,13 @@ AXUIElementRef CreateActiveTextFieldRef() {
 }
 
 CFArrayRef CreateChildrenArray(AXUIElementRef element) {
-  CFIndex count;
-  AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
+  if (element == NULL) {
+    return NULL;
+  }
 
+  CFIndex count;
   CFArrayRef children;
+  AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
   AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
   return children;
 }
@@ -208,11 +223,6 @@ void FocusApplication(const std::string& application) {
 }
 
 std::string GetActiveApplication() {
-  NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
-  if (running == NULL) {
-    return "";
-  }
-
   if (AXIsProcessTrustedWithOptions(NULL)) {
     AXUIElementRef window = CreateActiveWindowRef();
     if (window != NULL) {
@@ -224,12 +234,41 @@ std::string GetActiveApplication() {
     }
   }
 
+  int pid = GetActivePid();
+  if (pid == -1) {
+    return "";
+  }
+
+  NSRunningApplication* running =
+      [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
   return [[NSString stringWithFormat:@"%@ %@", running.bundleURL.path, running.bundleIdentifier]
       UTF8String];
 }
 
+int GetActivePid() {
+  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
+      kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  for (NSDictionary* window in windows) {
+    int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
+    if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active) {
+      return pid;
+    }
+  }
+
+  NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
+  if (running == NULL) {
+    return -1;
+  }
+
+  return running.processIdentifier;
+}
+
 void GetClickableButtons(AXUIElementRef element, std::vector<std::string>& result) {
   CFArrayRef children = CreateChildrenArray(element);
+  if (children == NULL) {
+    return;
+  }
+
   int n = CFArrayGetCount(children);
   for (CFIndex i = 0; i < 20 && i < n; i++) {
     AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
@@ -246,11 +285,15 @@ void GetClickableButtons(AXUIElementRef element, std::vector<std::string>& resul
 }
 
 std::vector<std::string> GetClickableButtons() {
-  std::vector<std::string> buttons;
+  std::vector<std::string> result;
+  if (!AXIsProcessTrustedWithOptions(NULL)) {
+    return result;
+  }
+
   AXUIElementRef window = CreateActiveWindowRef();
-  GetClickableButtons(window, buttons);
+  GetClickableButtons(window, result);
   CFRelease(window);
-  return buttons;
+  return result;
 }
 
 std::tuple<std::string, int> GetEditorState(bool fallback) {
@@ -258,8 +301,16 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   std::get<0>(result) = "";
   std::get<1>(result) = 0;
 
-  AXUIElementRef field = CreateActiveTextFieldRef();
-  if (fallback && field == NULL) {
+  AXUIElementRef field = NULL;
+  if (AXIsProcessTrustedWithOptions(NULL)) {
+    field = CreateActiveTextFieldRef();
+  }
+
+  if (field == NULL) {
+    if (!fallback) {
+      return result;
+    }
+
     NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
     [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
     NSString* previous = @"";
@@ -329,6 +380,10 @@ std::string GetRoleDescription(AXUIElementRef element) {
 }
 
 std::string GetRawTitle(AXUIElementRef element) {
+  if (element == NULL) {
+    return "";
+  }
+
   CFStringRef title = NULL;
   AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&title));
 
@@ -379,6 +434,10 @@ std::string GetTitle(AXUIElementRef element) {
   std::string result = GetRawTitle(element);
   if (result == "") {
     CFArrayRef children = CreateChildrenArray(element);
+    if (children == NULL) {
+      return result;
+    }
+
     int n = CFArrayGetCount(children);
     for (CFIndex i = 0; i < 2 && i < n; i++) {
       AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
@@ -564,6 +623,10 @@ void PressKey(const std::string& key, const std::vector<std::string>& modifiers)
 }
 
 void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
+  if (AXIsProcessTrustedWithOptions(NULL)) {
+    return;
+  }
+
   AXUIElementRef field = CreateActiveTextFieldRef();
   if (field == NULL) {
     return;
