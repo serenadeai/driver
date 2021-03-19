@@ -270,6 +270,8 @@ void PressKey(const std::string& key, std::vector<std::string> modifiers) {
   for (std::string modifier : modifiers) {
     ToggleKey(modifier, false);
   }
+
+  Sleep(2);
 }
 
 std::string ProcessName(HWND window) {
