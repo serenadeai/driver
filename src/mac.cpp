@@ -620,6 +620,7 @@ void MouseUp(const std::string& button) {
 void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
   ToggleKey(key, modifiers, true);
   ToggleKey(key, modifiers, false);
+  usleep(3000);
 }
 
 void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
