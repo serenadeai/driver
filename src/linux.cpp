@@ -426,6 +426,8 @@ void PressKey(Display* display, std::string key,
   if (shift) {
     ToggleKey(display, "shift", false);
   }
+
+  usleep(3000);
 }
 
 std::string ProcessName(Display* display, Window window) {
