@@ -1,6 +1,6 @@
 {
   "name": "serenade-driver",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A library for cross-platform system automations.",
   "main": "index.js",
   "repository": "https://github.com/serenadeai/driver",
