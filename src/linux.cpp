@@ -155,9 +155,9 @@ std::tuple<int, bool, bool> GetKeycodeAndModifiers(Display* display,
   std::string mapped = key;
   if (key == "escape") {
     mapped = "Escape";
-  } else if (key == "control" || key == "ctrl") {
+  } else if (key == "control" || key == "ctrl" || key == "commandOrControl") {
     mapped = "Control_L";
-  } else if (key == "alt") {
+  } else if (key == "alt" || key == "option") {
     mapped = "Alt_L";
   } else if (key == "altgr") {
     mapped = "ISO_Level3_Shift";

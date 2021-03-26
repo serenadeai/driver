@@ -472,7 +472,7 @@ std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(const std::string& k
     std::get<0>(result) = CGKeyCode(kVK_ForwardDelete);
   } else if (key == "escape") {
     std::get<0>(result) = CGKeyCode(kVK_Escape);
-  } else if (key == "command" || key == "cmd") {
+  } else if (key == "command" || key == "cmd" || key == "commandOrControl") {
     std::get<0>(result) = CGKeyCode(kVK_Command);
   } else if (key == "caps") {
     std::get<0>(result) = CGKeyCode(kVK_CapsLock);

@@ -156,7 +156,8 @@ BOOL CALLBACK GetRunningWindows(HWND window, LPARAM data) {
   return TRUE;
 }
 
-std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(const std::string& key) {
+std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(
+    const std::string& key) {
   std::tuple<int, bool, bool, int> result;
   std::get<0>(result) = -1;
 
@@ -168,9 +169,9 @@ std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(const std::string& ke
     std::get<0>(result) = VK_UP;
   } else if (key == "down") {
     std::get<0>(result) = VK_DOWN;
-  } else if (key == "control" || key == "ctrl") {
+  } else if (key == "control" || key == "ctrl" || key == "commandOrControl") {
     std::get<0>(result) = VK_CONTROL;
-  } else if (key == "alt") {
+  } else if (key == "alt" || key == "option") {
     std::get<0>(result) = VK_MENU;
   } else if (key == "shift") {
     std::get<0>(result) = VK_SHIFT;
