@@ -464,9 +464,7 @@ std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(const std::string& k
     std::get<0>(result) = CGKeyCode(kVK_Tab);
   } else if (key == "space" || key == " ") {
     std::get<0>(result) = CGKeyCode(kVK_Space);
-  } else if (key == "backspace") {
-    std::get<0>(result) = CGKeyCode(kVK_Delete);
-  } else if (key == "delete") {
+  } else if (key == "backspace" || key == "delete") {
     std::get<0>(result) = CGKeyCode(kVK_Delete);
   } else if (key == "forwarddelete") {
     std::get<0>(result) = CGKeyCode(kVK_ForwardDelete);
@@ -479,8 +477,6 @@ std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(const std::string& k
   } else if (key == "shift") {
     std::get<0>(result) = CGKeyCode(kVK_Shift);
   } else if (key == "option" || key == "alt") {
-    std::get<0>(result) = CGKeyCode(kVK_Option);
-  } else if (key == "alt") {
     std::get<0>(result) = CGKeyCode(kVK_Option);
   } else if (key == "control" || key == "ctrl") {
     std::get<0>(result) = CGKeyCode(kVK_Control);
@@ -620,7 +616,6 @@ void MouseUp(const std::string& button) {
 void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
   ToggleKey(key, modifiers, true);
   ToggleKey(key, modifiers, false);
-  usleep(3000);
 }
 
 void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
@@ -727,7 +722,9 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
   CGEventPost(kCGHIDEventTap, event);
   CFRelease(source);
   CFRelease(event);
-  usleep(1000);
+
+  // determined empirically by typing into a variety of applications
+  usleep(4000);
 }
 
 void ToLower(std::string& s) {
