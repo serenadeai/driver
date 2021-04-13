@@ -467,22 +467,24 @@ std::vector<std::string> GetRunningApplications() {
 
 std::string GetTitle(AXUIElementRef element) {
   std::string result = GetRawTitle(element);
-  CFArrayRef children = CreateChildrenArray(element);
-  if (children == NULL) {
-    return result;
-  }
-
-  int n = CFArrayGetCount(children);
-  for (CFIndex i = 0; i < 2 && i < n; i++) {
-    AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
-    std::string inner = GetRawTitle(child);
-    if (inner != "") {
-      result = inner;
-      break;
+  if (result == "") {
+    CFArrayRef children = CreateChildrenArray(element);
+    if (children == NULL) {
+      return result;
     }
-  }
 
-  CFRelease(children);
+    int n = CFArrayGetCount(children);
+    for (CFIndex i = 0; i < 2 && i < n; i++) {
+      AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+      std::string inner = GetRawTitle(child);
+      if (inner != "") {
+        result = inner;
+        break;
+      }
+    }
+
+    CFRelease(children);
+  }
 
   return result;
 }
