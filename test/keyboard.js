@@ -6,7 +6,7 @@ const run = async () => {
     await driver.typeText(text);
   }
 
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 10; i++) {
     await driver.typeText(text);
     await driver.pressKey("backspace", [], text.length);
   }

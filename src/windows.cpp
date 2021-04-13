@@ -54,6 +54,8 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
     AllowSetForegroundWindow(ASFW_ANY);
     SetForegroundWindow(window);
     ToggleKey("alt", false);
+    std::vector<std::string> m;
+    PressKey("escape", m);
     return FALSE;
   }
 

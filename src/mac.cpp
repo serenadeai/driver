@@ -337,35 +337,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   }
 
   if (field == NULL) {
-    if (!fallback) {
-      return result;
-    }
-
-    NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
-    [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
-    NSString* previous = @"";
-    if (pasteboard.pasteboardItems.count > 0) {
-      previous = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-    }
-
-    PressKey("left", std::vector<std::string>{"command", "shift"});
-    PressKey("up", std::vector<std::string>{"command", "shift"});
-    PressKey("c", std::vector<std::string>{"command"});
-    usleep(10000);
-    PressKey("right", std::vector<std::string>{});
-    NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-
-    PressKey("right", std::vector<std::string>{"command", "shift"});
-    PressKey("down", std::vector<std::string>{"command", "shift"});
-    PressKey("c", std::vector<std::string>{"command"});
-    usleep(10000);
-    PressKey("left", std::vector<std::string>{});
-    NSString* right = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-
-    [pasteboard setString:previous forType:NSPasteboardTypeString];
-    std::get<0>(result) = [[NSString stringWithFormat:@"%@%@", left, right] UTF8String];
-    std::get<1>(result) = left.length;
-    return result;
+    return fallback ? GetEditorStateFallback() : result;
   }
 
   AXValueRef value = NULL;
@@ -381,6 +353,38 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   CFMutableArrayRef children = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
   std::get<0>(result) = GetCombinedTextChildren(field, children);
   CFRelease(field);
+  return result;
+}
+
+std::tuple<std::string, int> GetEditorStateFallback() {
+  std::tuple<std::string, int> result;
+  std::get<0>(result) = "";
+  std::get<1>(result) = 0;
+
+  NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
+  [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
+  NSString* previous = @"";
+  if (pasteboard.pasteboardItems.count > 0) {
+    previous = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
+  }
+
+  PressKey("left", std::vector<std::string>{"command", "shift"});
+  PressKey("up", std::vector<std::string>{"command", "shift"});
+  PressKey("c", std::vector<std::string>{"command"});
+  usleep(10000);
+  PressKey("right", std::vector<std::string>{});
+  NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
+
+  PressKey("right", std::vector<std::string>{"command", "shift"});
+  PressKey("down", std::vector<std::string>{"command", "shift"});
+  PressKey("c", std::vector<std::string>{"command"});
+  usleep(10000);
+  PressKey("left", std::vector<std::string>{});
+  NSString* right = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
+
+  [pasteboard setString:previous forType:NSPasteboardTypeString];
+  std::get<0>(result) = [[NSString stringWithFormat:@"%@%@", left, right] UTF8String];
+  std::get<1>(result) = left.length;
   return result;
 }
 
