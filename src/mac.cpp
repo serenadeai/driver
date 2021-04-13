@@ -154,7 +154,7 @@ CFArrayRef CreateChildrenArray(AXUIElementRef element) {
   return children;
 }
 
-std::string GetCombinedTextChildren(AXUIElementRef element, CFMutableArrayRef textChildren) {
+CFStringRef GetNestedText(AXUIElementRef element, CFMutableArrayRef textChildren) {
   if (element == NULL) {
     return NULL;
   }
@@ -165,23 +165,45 @@ std::string GetCombinedTextChildren(AXUIElementRef element, CFMutableArrayRef te
   AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
 
   if (count == 0) {
-    if (role == "text") {
-      CFStringRef value = CFStringCreateWithCString(kCFAllocatorDefault, GetTitle(element).c_str(), kCFStringEncodingUTF8);
-      CFArrayAppendValue(textChildren, value);
-    }
+    CFStringRef value;
+    AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
+    CFArrayAppendValue(textChildren, value);
   } else {
     AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
     for (CFIndex i = 0; i < count; i++) {
       AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
-      GetCombinedTextChildren(child, textChildren);
+      GetNestedText(child, textChildren);
     }
   }
   CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));
-  CFIndex bufferSize = CFStringGetLength(combined) + 1;
-  char buffer[bufferSize];
-  CFStringGetCString(combined, buffer, bufferSize, kCFStringEncodingUTF8);
-  std::string output (buffer);
-  return output;
+  return combined;
+}
+
+CFStringRef GetNestedTextFromChildren(AXUIElementRef element) {
+  if (element == NULL) {
+    return NULL;
+  }
+
+  CFIndex count;
+  CFArrayRef children;
+  AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
+  
+  if (count == 0) {
+    return CFSTR("");
+  } else {
+    CFMutableArrayRef childTexts = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
+    AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
+    for (CFIndex i = 0; i < count; i++) {
+      AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+      if (GetRoleDescription(child) == "list") {
+        CFArrayAppendValue(childTexts, GetNestedTextFromChildren(child));
+      } else {
+        CFArrayAppendValue(childTexts, GetNestedText(child, CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL)));
+      }
+    }
+    CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, childTexts, CFSTR("\n"));
+    return combined;  
+  }
 }
 
 void Describe(AXUIElementRef element) {
@@ -350,8 +372,8 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
     CFRelease(value);
   }
 
-  CFMutableArrayRef children = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
-  std::get<0>(result) = GetCombinedTextChildren(field, children);
+  std::string source([(NSString*)GetNestedTextFromChildren(field) UTF8String]);
+  std::get<0>(result) = source;
   CFRelease(field);
   return result;
 }
