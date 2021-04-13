@@ -154,6 +154,36 @@ CFArrayRef CreateChildrenArray(AXUIElementRef element) {
   return children;
 }
 
+std::string GetCombinedTextChildren(AXUIElementRef element, CFMutableArrayRef textChildren) {
+  if (element == NULL) {
+    return NULL;
+  }
+
+  CFIndex count;
+  CFArrayRef children;
+  std::string role = GetRoleDescription(element);
+  AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
+
+  if (count == 0) {
+    if (role == "text") {
+      CFStringRef value = CFStringCreateWithCString(kCFAllocatorDefault, GetTitle(element).c_str(), kCFStringEncodingUTF8);
+      CFArrayAppendValue(textChildren, value);
+    }
+  } else {
+    AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
+    for (CFIndex i = 0; i < count; i++) {
+      AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+      GetCombinedTextChildren(child, textChildren);
+    }
+  }
+  CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));
+  CFIndex bufferSize = CFStringGetLength(combined) + 1;
+  char buffer[bufferSize];
+  CFStringGetCString(combined, buffer, bufferSize, kCFStringEncodingUTF8);
+  std::string output (buffer);
+  return output;
+}
+
 void Describe(AXUIElementRef element) {
   const char* delimiter = ",";
   std::cout << "Title: " << GetTitle(element) << std::endl;
@@ -348,7 +378,8 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
     CFRelease(value);
   }
 
-  std::get<0>(result) = GetTitle(field);
+  CFMutableArrayRef children = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
+  std::get<0>(result) = GetCombinedTextChildren(field, children);
   CFRelease(field);
   return result;
 }
@@ -432,24 +463,22 @@ std::vector<std::string> GetRunningApplications() {
 
 std::string GetTitle(AXUIElementRef element) {
   std::string result = GetRawTitle(element);
-  if (result == "") {
-    CFArrayRef children = CreateChildrenArray(element);
-    if (children == NULL) {
-      return result;
-    }
-
-    int n = CFArrayGetCount(children);
-    for (CFIndex i = 0; i < 2 && i < n; i++) {
-      AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
-      std::string inner = GetRawTitle(child);
-      if (inner != "") {
-        result = inner;
-        break;
-      }
-    }
-
-    CFRelease(children);
+  CFArrayRef children = CreateChildrenArray(element);
+  if (children == NULL) {
+    return result;
   }
+
+  int n = CFArrayGetCount(children);
+  for (CFIndex i = 0; i < 2 && i < n; i++) {
+    AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+    std::string inner = GetRawTitle(child);
+    if (inner != "") {
+      result = inner;
+      break;
+    }
+  }
+
+  CFRelease(children);
 
   return result;
 }
