@@ -27,8 +27,8 @@ namespace driver
     void GetClickableButtons(AXUIElementRef element,
                              std::vector<std::string> &result);
     std::vector<std::string> GetClickableButtons();
-    std::tuple<std::string, int, int> GetEditorState(bool fallback);
-    std::tuple<std::string, int, int> GetEditorStateFallback();
+    std::tuple<std::string, int> GetEditorState(bool fallback);
+    std::tuple<std::string, int> GetEditorStateFallback();
     std::tuple<int, int> GetMouseLocation();
     std::string GetRoleDescription(AXUIElementRef element);
     std::string GetRawTitle(AXUIElementRef element);

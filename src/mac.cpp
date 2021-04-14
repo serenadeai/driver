@@ -347,11 +347,10 @@ std::vector<std::string> GetClickableButtons() {
   return result;
 }
 
-std::tuple<std::string, int, int> GetEditorState(bool fallback) {
-  std::tuple<std::string, int, int> result;
+std::tuple<std::string, int> GetEditorState(bool fallback) {
+  std::tuple<std::string, int> result;
   std::get<0>(result) = "";
   std::get<1>(result) = 0;
-  std::get<2>(result) = 0;
 
   AXUIElementRef field = NULL;
   if (AXIsProcessTrustedWithOptions(NULL)) {
@@ -362,39 +361,44 @@ std::tuple<std::string, int, int> GetEditorState(bool fallback) {
     return fallback ? GetEditorStateFallback() : result;
   }
 
-  CFStringRef sourceRef = GetNestedTextFromChildren(field);
-  std::string source([(NSString*)sourceRef UTF8String]);
-  std::get<0>(result) = source;
-  
   AXValueRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
-  if (value != NULL) {
-    CFRange range;
-    AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
-    int bulletCount = 0;
-    int newLineCount = 0;
-    for (CFIndex i = 0; i < range.location; i++) {
-      if (CFStringGetCharacterAtIndex(sourceRef, i) == L'\n') {
-        newLineCount++;
-      } else if (CFStringGetCharacterAtIndex(sourceRef, i) == U'\u2022') {
-        bulletCount++;
+  CFStringRef sourceRef;
+  if (GetRoleDescription(field) == "text entry area") {
+    sourceRef = GetNestedTextFromChildren(field);
+    NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingUTF32LE)];    
+    std::wstring source((wchar_t*)[sourceData bytes], [sourceData length] / sizeof(wchar_t));
+    std::get<0>(result) = std::string(source.begin(), source.end());
+    if (value != NULL) {
+      CFRange range;
+      AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
+      int newLineCount = 0;
+      for (CFIndex i = 0; i < range.location + newLineCount; i++) {
+        if (source.at(i) == L'\n') {
+          newLineCount++;
+        }
       }
+      std::get<1>(result) = range.location + newLineCount;
+      CFRelease(value);
     }
-    std::get<1>(result) = range.location + newLineCount;
-    std::get<2>(result) = newLineCount;
-    CFRelease(value);
+  } else {
+    std::get<0>(result) = GetTitle(field);
+    if (value != NULL) {
+      CFRange range;
+      AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
+      std::get<1>(result) = range.location;
+      CFRelease(value);
+    }
   }
-
   CFRelease(field);
   return result;
 }
 
-std::tuple<std::string, int, int> GetEditorStateFallback() {
-  std::tuple<std::string, int, int> result;
+std::tuple<std::string, int> GetEditorStateFallback() {
+  std::tuple<std::string, int> result;
   std::get<0>(result) = "";
   std::get<1>(result) = 0;
-  std::get<2>(result) = 0;
 
   NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
   [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
