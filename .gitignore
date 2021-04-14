@@ -7,3 +7,4 @@ node_modules
 12*
 *.log
 .idea
+.vscode
