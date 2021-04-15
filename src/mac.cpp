@@ -364,12 +364,15 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   AXValueRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
-  CFStringRef sourceRef;
   if (GetRoleDescription(field) == "text entry area") {
-    sourceRef = GetNestedTextFromChildren(field);
+    CFStringRef sourceRef = GetNestedTextFromChildren(field);
     NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingUTF32LE)];    
     std::wstring source((wchar_t*)[sourceData bytes], [sourceData length] / sizeof(wchar_t));
-    std::get<0>(result) = std::string(source.begin(), source.end());
+    std::string narrow(source.begin(), source.end());
+    for (int i = narrow.find("\u0006"); i >= 0; i = narrow.find("\u0006")) {
+      narrow.replace(i, 1, " ");
+    }
+    std::get<0>(result) = narrow;
     if (value != NULL) {
       CFRange range;
       AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
@@ -382,6 +385,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
       std::get<1>(result) = range.location + newLineCount;
       CFRelease(value);
     }
+    CFRelease(sourceRef);
   } else {
     std::get<0>(result) = GetTitle(field);
     if (value != NULL) {
