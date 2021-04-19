@@ -368,18 +368,21 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   AXValueRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
-  if (GetRoleDescription(field) == "text entry area") {
+  std::string activeApp = GetActiveApplication();
+  if (activeApp.find("slack") != std::string::npos && GetRoleDescription(field) == "text entry area") {
     CFStringRef sourceRef = GetNestedTextFromNextLevel(field);
     NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingUTF32LE)];    
-    std::wstring source((wchar_t*)[sourceData bytes], [sourceData length] / sizeof(wchar_t));
     CFRelease(sourceRef);
+    std::wstring source((wchar_t*)[sourceData bytes], [sourceData length] / sizeof(wchar_t));
     std::string narrow(source.begin(), source.end());
     // Bulleted lists in the Slack app send these characters in place of the bullet
-    // We replace it with a space to maintain the proper cursor position
+    // 3n + 1-th level: u\0006 (acknowledge)
+    // 3n + 2-th level: u\0007 (bell)
+    // 3n-th level: \t (tab)
+    // We replace the first two with a space to maintain the proper cursor position
     for (int i = narrow.find("\u0006"); i >= 0; i = narrow.find("\u0006")) {
       narrow.replace(i, 1, " ");
     }
-    // This character only appears in nested lists
     for (int i = narrow.find("\u0007"); i >= 0; i = narrow.find("\u0007")) {
       narrow.replace(i, 1, " ");
     }
