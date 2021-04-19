@@ -175,10 +175,11 @@ CFStringRef GetNestedText(AXUIElementRef element, CFMutableArrayRef textChildren
     }
   }
   CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));
+  CFRelease(children);
   return combined;
 }
 
-CFStringRef GetNestedTextFromChildren(AXUIElementRef element) {
+CFStringRef GetNestedTextFromNextLevel(AXUIElementRef element) {
   if (element == NULL) {
     return NULL;
   }
@@ -188,19 +189,22 @@ CFStringRef GetNestedTextFromChildren(AXUIElementRef element) {
   AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
   
   if (count == 0) {
-    return CFSTR("");
+    CFStringRef value;
+    AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
+    return value;
   } else {
     CFMutableArrayRef childTexts = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
     AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
     for (CFIndex i = 0; i < count; i++) {
       AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
       if (GetRoleDescription(child) == "list") {
-        CFArrayAppendValue(childTexts, GetNestedTextFromChildren(child));
+        CFArrayAppendValue(childTexts, GetNestedTextFromNextLevel(child));
       } else {
         CFArrayAppendValue(childTexts, GetNestedText(child, CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL)));
       }
     }
     CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, childTexts, CFSTR("\n"));
+    CFRelease(childTexts);
     return combined;  
   }
 }
@@ -365,11 +369,18 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
   if (GetRoleDescription(field) == "text entry area") {
-    CFStringRef sourceRef = GetNestedTextFromChildren(field);
+    CFStringRef sourceRef = GetNestedTextFromNextLevel(field);
     NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingUTF32LE)];    
     std::wstring source((wchar_t*)[sourceData bytes], [sourceData length] / sizeof(wchar_t));
+    CFRelease(sourceRef);
     std::string narrow(source.begin(), source.end());
+    // Bulleted lists in the Slack app send these characters in place of the bullet
+    // We replace it with a space to maintain the proper cursor position
     for (int i = narrow.find("\u0006"); i >= 0; i = narrow.find("\u0006")) {
+      narrow.replace(i, 1, " ");
+    }
+    // This character only appears in nested lists
+    for (int i = narrow.find("\u0007"); i >= 0; i = narrow.find("\u0007")) {
       narrow.replace(i, 1, " ");
     }
     std::get<0>(result) = narrow;
@@ -385,7 +396,6 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
       std::get<1>(result) = range.location + newLineCount;
       CFRelease(value);
     }
-    CFRelease(sourceRef);
   } else {
     std::get<0>(result) = GetTitle(field);
     if (value != NULL) {

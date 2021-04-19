@@ -29,6 +29,8 @@ std::vector<std::string> GetClickableButtons();
 std::tuple<std::string, int> GetEditorState(bool fallback);
 std::tuple<std::string, int> GetEditorStateFallback();
 std::tuple<int, int> GetMouseLocation();
+CFStringRef GetNestedText(AXUIElementRef element);
+CFStringRef GetNestedTextFromNextLevel(AXUIElementRef element);
 std::string GetRoleDescription(AXUIElementRef element);
 std::string GetRawTitle(AXUIElementRef element);
 std::vector<std::string> GetRunningApplications();
