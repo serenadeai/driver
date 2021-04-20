@@ -461,6 +461,9 @@ std::string GetTitle(AXUIElementRef element) {
 std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(const std::string& key) {
   std::tuple<CGKeyCode, bool, bool> result;
   std::get<0>(result) = kVirtualKeyNotFound;
+  if (key == "") {
+    return result;
+  }
 
   if (key == "enter" || key == "\n" || key == "return") {
     std::get<0>(result) = CGKeyCode(kVK_Return);
@@ -677,7 +680,7 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
   CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
   CGEventRef event = CGEventCreateKeyboardEvent(source, std::get<0>(keycode), down);
 
-  if (std::get<0>(keycode) == kVirtualKeyNotFound) {
+  if (std::get<0>(keycode) == kVirtualKeyNotFound && key != "") {
     unichar c[1];
     c[0] = [[NSString stringWithFormat:@"%c", key[0]] characterAtIndex:0];
     CGEventKeyboardSetUnicodeString(event, 1, c);
