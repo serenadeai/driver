@@ -393,14 +393,15 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
       CFRange range;
       AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
       int newLineCount = 0;
-      for (CFIndex i = 0; i < range.location; i++) {
+      for (CFIndex i = 0; (i < range.location + newLineCount) && (i < (int)narrow.size()); i++) {
         if (narrow[i] == '\n') {
+          // Double newlines update the range.location property correctly, so avoid double counting
           if ((i > 0) && (narrow[i-1] != '\n')) {
             newLineCount++;
           }
         }
       }
-      std::get<1>(result) = range.location + newLineCount;
+      std::get<1>(result) = std::min(range.location + newLineCount, (long)narrow.size());
       CFRelease(value);
     }
   } else {
