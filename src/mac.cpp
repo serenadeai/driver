@@ -154,13 +154,12 @@ CFArrayRef CreateChildrenArray(AXUIElementRef element) {
   return children;
 }
 
-CFStringRef GetNestedText(AXUIElementRef element, CFMutableArrayRef textChildren) {
+CFStringRef GetLineText(AXUIElementRef element, CFMutableArrayRef textChildren) {
   if (element == NULL) {
     return NULL;
   }
 
   CFIndex count;
-  CFArrayRef children;
   AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
 
   if (count == 0) {
@@ -168,10 +167,11 @@ CFStringRef GetNestedText(AXUIElementRef element, CFMutableArrayRef textChildren
     AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
     CFArrayAppendValue(textChildren, value);
   } else {
+    CFArrayRef children;
     AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
     for (CFIndex i = 0; i < count; i++) {
       AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
-      GetNestedText(child, textChildren);
+      GetLineText(child, textChildren);
     }
     CFRelease(children);
   }
@@ -179,7 +179,7 @@ CFStringRef GetNestedText(AXUIElementRef element, CFMutableArrayRef textChildren
   return combined;
 }
 
-CFStringRef GetNestedTextFromNextLevel(AXUIElementRef element) {
+CFStringRef GetLines(AXUIElementRef element) {
   if (element == NULL) {
     return NULL;
   }
@@ -193,18 +193,21 @@ CFStringRef GetNestedTextFromNextLevel(AXUIElementRef element) {
     AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
     return value;
   } else {
-    CFMutableArrayRef childTexts = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
+    CFMutableArrayRef lines = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
     AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
     for (CFIndex i = 0; i < count; i++) {
       AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+      CFMutableArrayRef lineTextChildren = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
       if (GetRoleDescription(child) == "list") {
-        CFArrayAppendValue(childTexts, GetNestedTextFromNextLevel(child));
+        // Recurse one level to get each item in the list
+        CFArrayAppendValue(lines, GetLines(child));
       } else {
-        CFStringRef nestedText = GetNestedText(child, CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL));
-        CFArrayAppendValue(childTexts, nestedText);
+        CFArrayAppendValue(lines, GetLineText(child, lineTextChildren));
       }
+      CFRelease(lineTextChildren);
     }
-    CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, childTexts, CFSTR("\n"));
+    CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, lines, CFSTR("\n"));
+    CFRelease(lines);
     return combined;  
   }
 }
@@ -370,7 +373,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
                                 reinterpret_cast<CFTypeRef*>(&value));
   std::string activeApp = GetActiveApplication();
   if (activeApp.find("Slack") != std::string::npos && GetRoleDescription(field) == "text entry area") {
-    CFStringRef sourceRef = GetNestedTextFromNextLevel(field);
+    CFStringRef sourceRef = GetLines(field);
     NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:NSUTF32LittleEndianStringEncoding];
     CFRelease(sourceRef);
     std::wstring source(static_cast<const wchar_t*>([sourceData bytes]), [sourceData length] / sizeof(wchar_t));
