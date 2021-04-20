@@ -373,14 +373,14 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
     CFStringRef sourceRef = GetNestedTextFromNextLevel(field);
     NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:NSUTF32LittleEndianStringEncoding];
     CFRelease(sourceRef);
-    std::wstring source((wchar_t*)[sourceData bytes], [sourceData length] / sizeof(wchar_t));
+    std::wstring source(static_cast<const wchar_t*>([sourceData bytes]), [sourceData length] / sizeof(wchar_t));
     std::string narrow(source.begin(), source.end());
     // Bulleted lists in the Slack app send these characters in place of the bullet
     // 3n + 1-th level: u\0006 (acknowledge)
     // 3n + 2-th level: u\0007 (bell)
     // 3n-th level: \t (tab)
     // We replace the first two with a space to maintain the proper cursor position
-    for (int i = 0; i < narrow.length(); i++) {
+    for (CFIndex i = 0; i < (int)narrow.size(); i++) {
       if (narrow[i] == '\u0006' || narrow[i] == '\u0007') {
         narrow[i] = ' ';
       }
@@ -390,9 +390,11 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
       CFRange range;
       AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
       int newLineCount = 0;
-      for (CFIndex i = 0; i < range.location + newLineCount; i++) {
-        if (source.at(i) == L'\n') {
-          newLineCount++;
+      for (CFIndex i = 0; i < range.location; i++) {
+        if (narrow[i] == '\n') {
+          if ((i > 0) && (narrow[i-1] != '\n')) {
+            newLineCount++;
+          }
         }
       }
       std::get<1>(result) = range.location + newLineCount;
