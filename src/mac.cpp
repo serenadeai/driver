@@ -173,9 +173,9 @@ CFStringRef GetNestedText(AXUIElementRef element, CFMutableArrayRef textChildren
       AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
       GetNestedText(child, textChildren);
     }
+    CFRelease(children);
   }
   CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));
-  CFRelease(children);
   return combined;
 }
 
@@ -200,11 +200,11 @@ CFStringRef GetNestedTextFromNextLevel(AXUIElementRef element) {
       if (GetRoleDescription(child) == "list") {
         CFArrayAppendValue(childTexts, GetNestedTextFromNextLevel(child));
       } else {
-        CFArrayAppendValue(childTexts, GetNestedText(child, CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL)));
+        CFStringRef nestedText = GetNestedText(child, CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL));
+        CFArrayAppendValue(childTexts, nestedText);
       }
     }
     CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, childTexts, CFSTR("\n"));
-    CFRelease(childTexts);
     return combined;  
   }
 }
@@ -369,9 +369,9 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
   std::string activeApp = GetActiveApplication();
-  if (activeApp.find("slack") != std::string::npos && GetRoleDescription(field) == "text entry area") {
+  if (activeApp.find("Slack") != std::string::npos && GetRoleDescription(field) == "text entry area") {
     CFStringRef sourceRef = GetNestedTextFromNextLevel(field);
-    NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingUTF32LE)];    
+    NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:NSUTF32LittleEndianStringEncoding];
     CFRelease(sourceRef);
     std::wstring source((wchar_t*)[sourceData bytes], [sourceData length] / sizeof(wchar_t));
     std::string narrow(source.begin(), source.end());
@@ -380,11 +380,10 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
     // 3n + 2-th level: u\0007 (bell)
     // 3n-th level: \t (tab)
     // We replace the first two with a space to maintain the proper cursor position
-    for (int i = narrow.find("\u0006"); i >= 0; i = narrow.find("\u0006")) {
-      narrow.replace(i, 1, " ");
-    }
-    for (int i = narrow.find("\u0007"); i >= 0; i = narrow.find("\u0007")) {
-      narrow.replace(i, 1, " ");
+    for (int i = 0; i < narrow.length(); i++) {
+      if (narrow[i] == '\u0006' || narrow[i] == '\u0007') {
+        narrow[i] = ' ';
+      }
     }
     std::get<0>(result) = narrow;
     if (value != NULL) {
