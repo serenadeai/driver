@@ -154,6 +154,64 @@ CFArrayRef CreateChildrenArray(AXUIElementRef element) {
   return children;
 }
 
+CFStringRef GetLineText(AXUIElementRef element, CFMutableArrayRef textChildren) {
+  if (element == NULL) {
+    return NULL;
+  }
+
+  CFIndex count;
+  AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
+
+  if (count == 0) {
+    CFStringRef value;
+    AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
+    CFArrayAppendValue(textChildren, value);
+  } else {
+    CFArrayRef children;
+    AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
+    for (CFIndex i = 0; i < count; i++) {
+      AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+      CFStringRef currText = GetLineText(child, textChildren);
+      CFRelease(currText);
+    }
+    CFRelease(children);
+  }
+  return CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));;
+}
+
+CFStringRef GetLines(AXUIElementRef element) {
+  if (element == NULL) {
+    return NULL;
+  }
+
+  CFIndex count;
+  CFArrayRef children;
+  AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
+  
+  if (count == 0) {
+    CFStringRef value;
+    AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
+    return value;
+  } else {
+    CFMutableArrayRef lines = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
+    AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
+    for (CFIndex i = 0; i < count; i++) {
+      AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
+      CFMutableArrayRef lineTextChildren = CFArrayCreateMutable(kCFAllocatorDefault, 0, NULL);
+      if (GetRoleDescription(child) == "list") {
+        // Recurse one level to get each item in the list
+        CFArrayAppendValue(lines, GetLines(child));
+      } else {
+        CFArrayAppendValue(lines, GetLineText(child, lineTextChildren));
+      }
+      CFRelease(lineTextChildren);
+    }
+    CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, lines, CFSTR("\n"));
+    CFRelease(lines);
+    return combined;  
+  }
+}
+
 void Describe(AXUIElementRef element) {
   const char* delimiter = ",";
   std::cout << "Title: " << GetTitle(element) << std::endl;
@@ -313,14 +371,48 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   AXValueRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
-  if (value != NULL) {
-    CFRange range;
-    AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
-    std::get<1>(result) = range.location + range.length;
-    CFRelease(value);
+  std::string activeApp = GetActiveApplication();
+  if (activeApp.find("Slack") != std::string::npos && GetRoleDescription(field) == "text entry area") {
+    CFStringRef sourceRef = GetLines(field);
+    NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:NSUTF32LittleEndianStringEncoding];
+    CFRelease(sourceRef);
+    std::wstring source(static_cast<const wchar_t*>([sourceData bytes]), [sourceData length] / sizeof(wchar_t));
+    std::string narrow(source.begin(), source.end());
+    // Bulleted lists in the Slack app send these characters in place of the bullet
+    // 3n + 1-th level: u\0006 (acknowledge)
+    // 3n + 2-th level: u\0007 (bell)
+    // 3n-th level: \t (tab)
+    // We replace the first two with a space to maintain the proper cursor position
+    for (CFIndex i = 0; i < (int)narrow.size(); i++) {
+      if (narrow[i] == '\u0006' || narrow[i] == '\u0007') {
+        narrow[i] = ' ';
+      }
+    }
+    std::get<0>(result) = narrow;
+    if (value != NULL) {
+      CFRange range;
+      AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
+      int newLineCount = 0;
+      for (CFIndex i = 0; (i < range.location + newLineCount) && (i < (int)narrow.size()); i++) {
+        if (narrow[i] == '\n') {
+          // Double newlines update the range.location property correctly, so avoid double counting
+          if (i > 0 && narrow[i-1] != '\n') {
+            newLineCount++;
+          }
+        }
+      }
+      std::get<1>(result) = std::min(range.location + newLineCount, (long)narrow.size());
+      CFRelease(value);
+    }
+  } else {
+    std::get<0>(result) = GetTitle(field);
+    if (value != NULL) {
+      CFRange range;
+      AXValueGetValue(value, static_cast<AXValueType>(kAXValueCFRangeType), &range);
+      std::get<1>(result) = range.location;
+      CFRelease(value);
+    }
   }
-
-  std::get<0>(result) = GetTitle(field);
   CFRelease(field);
   return result;
 }
