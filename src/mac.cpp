@@ -171,12 +171,12 @@ CFStringRef GetLineText(AXUIElementRef element, CFMutableArrayRef textChildren) 
     AXUIElementCopyAttributeValues(element, kAXChildrenAttribute, 0, count, &children);
     for (CFIndex i = 0; i < count; i++) {
       AXUIElementRef child = static_cast<AXUIElementRef>(CFArrayGetValueAtIndex(children, i));
-      GetLineText(child, textChildren);
+      CFStringRef currText = GetLineText(child, textChildren);
+      CFRelease(currText);
     }
     CFRelease(children);
   }
-  CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));
-  return combined;
+  return CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));;
 }
 
 CFStringRef GetLines(AXUIElementRef element) {
@@ -396,7 +396,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
       for (CFIndex i = 0; (i < range.location + newLineCount) && (i < (int)narrow.size()); i++) {
         if (narrow[i] == '\n') {
           // Double newlines update the range.location property correctly, so avoid double counting
-          if ((i > 0) && (narrow[i-1] != '\n')) {
+          if (i > 0 && narrow[i-1] != '\n') {
             newLineCount++;
           }
         }
