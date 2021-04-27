@@ -28,12 +28,20 @@ exports.click = (button, count) => {
     count = 1;
   }
 
+  if (count < 1) {
+    return;
+  }
+
   return lib.click(button, count);
 };
 
 exports.clickButton = (button, count) => {
   if (count === undefined || count === false) {
     count = 1;
+  }
+
+  if (count < 1) {
+    return;
   }
 
   return lib.clickButton(button, count);
@@ -201,6 +209,10 @@ exports.pressKey = (key, modifiers, count) => {
 
   if (count === undefined || count === false) {
     count = 1;
+  }
+
+  if (count < 1) {
+    return;
   }
 
   return lib.pressKey(key, modifiers, count);

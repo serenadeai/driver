@@ -28,6 +28,10 @@ Napi::Promise Click(const Napi::CallbackInfo& info) {
 
   std::string button = info[0].As<Napi::String>().Utf8Value();
   int count = info[1].As<Napi::Number>().Int32Value();
+  if (count < 1) {
+    deferred.Resolve(env.Undefined());
+    return deferred.Promise();
+  }
 
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
@@ -45,9 +49,14 @@ Napi::Promise ClickButton(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
+  int count = info[1].As<Napi::Number>().Int32Value();
+  if (count < 1) {
+    deferred.Resolve(env.Undefined());
+    return deferred.Promise();
+  }
+
 #ifdef __APPLE__
-  driver::ClickButton(info[0].As<Napi::String>().Utf8Value(),
-                      info[1].As<Napi::Number>().Int32Value());
+  driver::ClickButton(info[0].As<Napi::String>().Utf8Value(), count);
 #endif
 
   deferred.Resolve(env.Undefined());
@@ -179,6 +188,10 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
 
   Napi::Array modifierArray = info[1].As<Napi::Array>();
   int count = info[2].As<Napi::Number>();
+  if (count < 1) {
+    deferred.Resolve(env.Undefined());
+    return deferred.Promise();
+  }
 
   std::vector<std::string> modifiers;
   for (uint32_t i = 0; i < modifierArray.Length(); i++) {
