@@ -426,7 +426,6 @@ std::tuple<std::string, int, bool> GetEditorState() {
 
 std::tuple<std::string, int, bool> GetEditorStateFallback() {
   std::tuple<std::string, int, bool> result;
-  std::get<2>(result) = true;
 
   NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
   [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
