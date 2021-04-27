@@ -107,17 +107,38 @@ Napi::Promise GetEditorState(const Napi::CallbackInfo& info) {
 
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
-  std::tuple<std::string, int> state =
-      driver::GetEditorState(display, info[0].As<Napi::Boolean>());
+  std::tuple<std::string, int, bool> state = driver::GetEditorState(display);
   XCloseDisplay(display);
 #else
-  std::tuple<std::string, int> state =
-      driver::GetEditorState(info[0].As<Napi::Boolean>());
+  std::tuple<std::string, int, bool> state = driver::GetEditorState();
 #endif
 
   Napi::Object result = Napi::Object::New(env);
   result.Set("text", std::get<0>(state));
   result.Set("cursor", std::get<1>(state));
+  result.Set("error", std::get<2>(state));
+  deferred.Resolve(result);
+
+  return deferred.Promise();
+}
+
+Napi::Promise GetEditorStateFallback(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+#ifdef __linux__
+  Display* display = XOpenDisplay(NULL);
+  std::tuple<std::string, int, bool> state =
+      driver::GetEditorStateFallback(display);
+  XCloseDisplay(display);
+#else
+  std::tuple<std::string, int, bool> state = driver::GetEditorStateFallback();
+#endif
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("text", std::get<0>(state));
+  result.Set("cursor", std::get<1>(state));
+  result.Set("error", std::get<2>(state));
   deferred.Resolve(result);
 
   return deferred.Promise();
@@ -285,6 +306,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, GetClickableButtons));
   exports.Set(Napi::String::New(env, "getEditorState"),
               Napi::Function::New(env, GetEditorState));
+  exports.Set(Napi::String::New(env, "getEditorStateFallback"),
+              Napi::Function::New(env, GetEditorStateFallback));
   exports.Set(Napi::String::New(env, "getMouseLocation"),
               Napi::Function::New(env, GetMouseLocation));
   exports.Set(Napi::String::New(env, "getRunningApplications"),

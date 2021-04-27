@@ -176,7 +176,8 @@ CFStringRef GetLineText(AXUIElementRef element, CFMutableArrayRef textChildren) 
     }
     CFRelease(children);
   }
-  return CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));;
+
+  return CFStringCreateByCombiningStrings(kCFAllocatorDefault, textChildren, CFSTR(""));
 }
 
 CFStringRef GetLines(AXUIElementRef element) {
@@ -187,7 +188,7 @@ CFStringRef GetLines(AXUIElementRef element) {
   CFIndex count;
   CFArrayRef children;
   AXUIElementGetAttributeValueCount(element, kAXChildrenAttribute, &count);
-  
+
   if (count == 0) {
     CFStringRef value;
     AXUIElementCopyAttributeValue(element, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
@@ -206,9 +207,10 @@ CFStringRef GetLines(AXUIElementRef element) {
       }
       CFRelease(lineTextChildren);
     }
-    CFStringRef combined = CFStringCreateByCombiningStrings(kCFAllocatorDefault, lines, CFSTR("\n"));
+    CFStringRef combined =
+        CFStringCreateByCombiningStrings(kCFAllocatorDefault, lines, CFSTR("\n"));
     CFRelease(lines);
-    return combined;  
+    return combined;
   }
 }
 
@@ -354,10 +356,9 @@ std::vector<std::string> GetClickableButtons() {
   return result;
 }
 
-std::tuple<std::string, int> GetEditorState(bool fallback) {
-  std::tuple<std::string, int> result;
-  std::get<0>(result) = "";
-  std::get<1>(result) = 0;
+std::tuple<std::string, int, bool> GetEditorState() {
+  std::tuple<std::string, int, bool> result;
+  std::get<2>(result) = true;
 
   AXUIElementRef field = NULL;
   if (AXIsProcessTrustedWithOptions(NULL)) {
@@ -365,19 +366,22 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   }
 
   if (field == NULL) {
-    return fallback ? GetEditorStateFallback() : result;
+    return result;
   }
 
   AXValueRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXSelectedTextRangeAttribute,
                                 reinterpret_cast<CFTypeRef*>(&value));
   std::string activeApp = GetActiveApplication();
-  if (activeApp.find("Slack") != std::string::npos && GetRoleDescription(field) == "text entry area") {
+  if (activeApp.find("Slack") != std::string::npos &&
+      GetRoleDescription(field) == "text entry area") {
     CFStringRef sourceRef = GetLines(field);
     NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:NSUTF32LittleEndianStringEncoding];
     CFRelease(sourceRef);
-    std::wstring source(static_cast<const wchar_t*>([sourceData bytes]), [sourceData length] / sizeof(wchar_t));
+    std::wstring source(static_cast<const wchar_t*>([sourceData bytes]),
+                        [sourceData length] / sizeof(wchar_t));
     std::string narrow(source.begin(), source.end());
+
     // Bulleted lists in the Slack app send these characters in place of the bullet
     // 3n + 1-th level: u\0006 (acknowledge)
     // 3n + 2-th level: u\0007 (bell)
@@ -388,6 +392,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
         narrow[i] = ' ';
       }
     }
+
     std::get<0>(result) = narrow;
     if (value != NULL) {
       CFRange range;
@@ -396,7 +401,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
       for (CFIndex i = 0; (i < range.location + newLineCount) && (i < (int)narrow.size()); i++) {
         if (narrow[i] == '\n') {
           // Double newlines update the range.location property correctly, so avoid double counting
-          if (i > 0 && narrow[i-1] != '\n') {
+          if (i > 0 && narrow[i - 1] != '\n') {
             newLineCount++;
           }
         }
@@ -413,14 +418,14 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
       CFRelease(value);
     }
   }
+
+  std::get<2>(result) = false;
   CFRelease(field);
   return result;
 }
 
-std::tuple<std::string, int> GetEditorStateFallback() {
-  std::tuple<std::string, int> result;
-  std::get<0>(result) = "";
-  std::get<1>(result) = 0;
+std::tuple<std::string, int, bool> GetEditorStateFallback() {
+  std::tuple<std::string, int, bool> result;
 
   NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
   [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
@@ -446,6 +451,7 @@ std::tuple<std::string, int> GetEditorStateFallback() {
   [pasteboard setString:previous forType:NSPasteboardTypeString];
   std::get<0>(result) = [[NSString stringWithFormat:@"%@%@", left, right] UTF8String];
   std::get<1>(result) = left.length;
+  std::get<2>(result) = false;
   return result;
 }
 

@@ -81,12 +81,12 @@ exports.getClickableButtons = () => {
   return lib.getClickableButtons();
 };
 
-exports.getEditorState = (fallback) => {
-  if (!fallback) {
-    fallback = false;
-  }
+exports.getEditorState = () => {
+  return lib.getEditorState();
+};
 
-  return lib.getEditorState(fallback);
+exports.getEditorStateFallback = () => {
+  return lib.getEditorStateFallback();
 };
 
 exports.getInstalledApplications = async () => {
