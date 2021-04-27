@@ -358,7 +358,7 @@ std::tuple<std::string, int, bool> GetEditorState(bool fallback) {
   std::tuple<std::string, int, bool> result;
   std::get<0>(result) = "";
   std::get<1>(result) = 0;
-  std::get<2>(result) = false;
+  std::get<2>(result) = true;
 
   AXUIElementRef field = NULL;
   if (AXIsProcessTrustedWithOptions(NULL)) {
@@ -415,7 +415,7 @@ std::tuple<std::string, int, bool> GetEditorState(bool fallback) {
     }
   }
   CFRelease(field);
-  std::get<2>(result) = true;
+  std::get<2>(result) = false;
   return result;
 }
 
@@ -423,7 +423,7 @@ std::tuple<std::string, int, bool> GetEditorStateFallback() {
   std::tuple<std::string, int, bool> result;
   std::get<0>(result) = "";
   std::get<1>(result) = 0;
-  std::get<2>(result) = false;
+  std::get<2>(result) = true;
 
   NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
   [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
@@ -449,7 +449,7 @@ std::tuple<std::string, int, bool> GetEditorStateFallback() {
   [pasteboard setString:previous forType:NSPasteboardTypeString];
   std::get<0>(result) = [[NSString stringWithFormat:@"%@%@", left, right] UTF8String];
   std::get<1>(result) = left.length;
-  std::get<2>(result) = true;
+  std::get<2>(result) = false;
   return result;
 }
 

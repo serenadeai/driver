@@ -92,7 +92,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
   std::tuple<std::string, int> result;
   std::get<0>(result) = "";
   std::get<1>(result) = 0;
-  std::get<2>(result) = false;
+  std::get<2>(result) = true;
   if (!fallback) {
     return result;
   }
@@ -121,7 +121,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
 
   std::get<0>(result) = left + right;
   std::get<1>(result) = left.length();
-  std::get<2>(result) = true;
+  std::get<2>(result) = false;
   return result;
 }
 

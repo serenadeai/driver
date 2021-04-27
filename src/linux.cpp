@@ -122,6 +122,9 @@ std::string GetClipboard(Display* display, Window window) {
 
 std::tuple<std::string, int, bool> GetEditorState(Display* display, bool fallback) {
   std::tuple<std::string, int, bool> result;
+  std::get<0>(result) = "";
+  std::get<1>(result) = 0;
+  std::get<2>(result) = true;
   if (!fallback) {
     return result;
   }
@@ -143,7 +146,7 @@ std::tuple<std::string, int, bool> GetEditorState(Display* display, bool fallbac
 
   std::get<0>(result) = left + right;
   std::get<1>(result) = left.length();
-  std::get<2>(result) = true;
+  std::get<2>(result) = false;
   return result;
 }
 

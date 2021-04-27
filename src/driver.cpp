@@ -109,7 +109,7 @@ Napi::Promise GetEditorState(const Napi::CallbackInfo& info) {
   Napi::Object result = Napi::Object::New(env);
   result.Set("text", std::get<0>(state));
   result.Set("cursor", std::get<1>(state));
-  result.Set("stateAvailable", std::get<2>(state));
+  result.Set("error", std::get<2>(state));
   deferred.Resolve(result);
 
   return deferred.Promise();
