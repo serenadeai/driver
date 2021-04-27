@@ -26,8 +26,8 @@ int GetActivePid();
 void GetClickableButtons(AXUIElementRef element,
                          std::vector<std::string>& result);
 std::vector<std::string> GetClickableButtons();
-std::tuple<std::string, int> GetEditorState(bool fallback);
-std::tuple<std::string, int> GetEditorStateFallback();
+std::tuple<std::string, int, bool> GetEditorState();
+std::tuple<std::string, int, bool> GetEditorStateFallback();
 std::tuple<int, int> GetMouseLocation();
 CFStringRef GetLines(AXUIElementRef element);
 CFStringRef GetLineText(AXUIElementRef element, CFMutableArrayRef textChildren);

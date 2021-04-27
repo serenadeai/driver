@@ -120,11 +120,14 @@ std::string GetClipboard(Display* display, Window window) {
   return result;
 }
 
-std::tuple<std::string, int> GetEditorState(Display* display, bool fallback) {
-  std::tuple<std::string, int> result;
-  if (!fallback) {
-    return result;
-  }
+std::tuple<std::string, int, bool> GetEditorState(Display* display) {
+  std::tuple<std::string, int, bool> result;
+  std::get<2>(result) = true;
+  return result;
+}
+
+std::tuple<std::string, int, bool> GetEditorStateFallback(Display* display) {
+  std::tuple<std::string, int, bool> result;
 
   unsigned long color = BlackPixel(display, DefaultScreen(display));
   Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0,
@@ -143,6 +146,7 @@ std::tuple<std::string, int> GetEditorState(Display* display, bool fallback) {
 
   std::get<0>(result) = left + right;
   std::get<1>(result) = left.length();
+  std::get<2>(result) = false;
   return result;
 }
 
