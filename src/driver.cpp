@@ -187,7 +187,7 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
   Napi::Array modifierArray = info[1].As<Napi::Array>();
-  int count = info[2].As<Napi::Number>();
+  int count = info[2].As<Napi::Number>().Int32Value();
   if (count < 1) {
     deferred.Resolve(env.Undefined());
     return deferred.Promise();
