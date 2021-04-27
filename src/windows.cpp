@@ -3,6 +3,7 @@
 // must be included after <windows.h>
 #include <processthreadsapi.h>
 #include <psapi.h>
+#include <uiautomation.h>
 #include <winuser.h>
 
 #include <algorithm>
@@ -14,6 +15,9 @@
 #include "windows.hpp"
 
 namespace driver {
+
+bool initialized_ = false;
+IUIAutomation* automation_;
 
 void Click(const std::string& button, int count) {
   for (int i = 0; i < count; i++) {
@@ -88,13 +92,76 @@ std::string GetClipboard() {
   return result;
 }
 
-std::tuple<std::string, int> GetEditorState(bool fallback) {
-  std::tuple<std::string, int> result;
-  std::get<0>(result) = "";
-  std::get<1>(result) = 0;
-  if (!fallback) {
+std::tuple<std::string, int, bool> GetEditorState() {
+  std::tuple<std::string, int, bool> result;
+  std::get<2>(result) = true;
+  InitializeUIAutomation();
+
+  IUIAutomationElement* focused;
+  if (automation_ == NULL || automation_->GetFocusedElement(&focused) != S_OK || focused == NULL) {
     return result;
   }
+
+  BOOL focusable = FALSE;
+  if (focused->get_CurrentIsKeyboardFocusable(&focusable) != S_OK || focusable == NULL || focusable == FALSE) {
+    return result;
+  }
+
+  BOOL focus = FALSE;
+  if (focused->get_CurrentHasKeyboardFocus(&focus) != S_OK || focus == NULL || focus == FALSE) {
+    return result;
+  }
+
+  BSTR id;
+  if (focused->get_CurrentAutomationId(&id) != S_OK || id == NULL) {
+    return result;
+  }
+
+  std::wstring wideId(id, SysStringLen(id));
+  std::string stringId = std::string(wideId.begin(), wideId.end());
+  SysFreeString(id);
+  if (stringId == "") {
+    return result;
+  }
+
+  IUIAutomationTextPattern2* pattern;
+  if (focused->GetCurrentPatternAs(UIA_TextPattern2Id,
+                                   IID_PPV_ARGS(&pattern)) != S_OK ||
+      pattern == NULL) {
+    return result;
+  }
+
+  IUIAutomationTextRange* document;
+  if (pattern->get_DocumentRange(&document) != S_OK || document == NULL) {
+    return result;
+  }
+
+  IUIAutomationTextRange* cursor;
+  BOOL active = FALSE;
+  if (pattern->GetCaretRange(&active, &cursor) != S_OK || cursor == NULL) {
+    return result;
+  }
+
+  BSTR value;
+  if (document->GetText(-1, &value) != S_OK || value == NULL) {
+    return result;
+  }
+
+  int position = 0;
+  cursor->CompareEndpoints(TextPatternRangeEndpoint_Start, document,
+                           TextPatternRangeEndpoint_Start, &position);
+
+  std::wstring wide(value, SysStringLen(value));
+  std::get<0>(result) = std::string(wide.begin(), wide.end());
+  std::get<1>(result) = position;
+  std::get<2>(result) = false;
+
+  SysFreeString(value);
+  return result;
+}
+
+std::tuple<std::string, int, bool> GetEditorStateFallback() {
+  std::tuple<std::string, int, bool> result;
 
   std::string previous = GetClipboard();
   PressKey("home", std::vector<std::string>{"control", "shift"});
@@ -120,6 +187,7 @@ std::tuple<std::string, int> GetEditorState(bool fallback) {
 
   std::get<0>(result) = left + right;
   std::get<1>(result) = left.length();
+  std::get<2>(result) = false;
   return result;
 }
 
@@ -240,6 +308,18 @@ std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(
   }
 
   return result;
+}
+
+void InitializeUIAutomation() {
+  if (initialized_) {
+    return;
+  }
+
+  CoInitialize(NULL);
+  CoCreateInstance(CLSID_CUIAutomation8, NULL, CLSCTX_INPROC_SERVER,
+                   IID_IUIAutomation, reinterpret_cast<void**>(&automation_));
+
+  initialized_ = true;
 }
 
 void MouseDown(const std::string& button) {
