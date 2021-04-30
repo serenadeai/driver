@@ -301,8 +301,7 @@ std::string GetActiveApplication() {
 
   NSRunningApplication* running =
       [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
-  return [[NSString stringWithFormat:@"%@ %@", running.bundleURL.path, running.bundleIdentifier]
-      UTF8String];
+  return [[NSString stringWithFormat:@"%@", running.bundleURL.path] UTF8String];
 }
 
 int GetActivePid() {
