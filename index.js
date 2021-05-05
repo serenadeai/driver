@@ -269,14 +269,6 @@ exports.setEditorState = (text, cursor, cursorEnd) => {
 };
 
 exports.setMouseLocation = (x, y) => {
-  if (x < 0) {
-    x = 0;
-  }
-
-  if (y < 0) {
-    y = 0;
-  }
-
   return lib.setMouseLocation(x, y);
 };
 
