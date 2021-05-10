@@ -178,7 +178,7 @@ exports.launchApplication = async (application, aliases) => {
           options.cwd = data.expanded.workingDir;
         }
 
-        child_process.spawn(data.expanded.target, args, options);
+        child_process.spawn(path.basename(data.expanded.target), args, options);
       });
     } else {
       child_process.spawn(app, [], { detached: true });
