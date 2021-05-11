@@ -304,6 +304,30 @@ std::string GetActiveApplication() {
   return [[NSString stringWithFormat:@"%@", running.bundleURL.path] UTF8String];
 }
 
+bool ActiveApplicationIsSandboxed() {
+  int pid = GetActivePid();
+  NSRunningApplication* running = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+  NSURL *bundleURL = running.bundleURL;
+  SecStaticCodeRef staticCode = NULL;
+  bool isSandboxed = false;
+
+  if (SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode) == errSecSuccess) {
+    if (SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSBasicValidateOnly, NULL, NULL) == errSecSuccess) {
+      SecRequirementRef sandboxRequirement;
+      if (SecRequirementCreateWithString(CFSTR("entitlement[\"com.apple.security.app-sandbox\"] exists"), kSecCSDefaultFlags,
+                                    &sandboxRequirement) == errSecSuccess)
+      {
+        OSStatus codeCheckResult = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSBasicValidateOnly, sandboxRequirement, NULL);
+        if (codeCheckResult == errSecSuccess) {
+            isSandboxed = true;
+        }
+      }
+    }
+    CFRelease(staticCode);
+  }
+  return isSandboxed;
+}
+
 int GetActivePid() {
   NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
       kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
@@ -374,6 +398,10 @@ std::tuple<std::string, int, bool> GetEditorState() {
   std::string activeApp = GetActiveApplication();
   if (activeApp.find("Slack") != std::string::npos &&
       GetRoleDescription(field) == "text entry area") {
+    // Can't obtain cursor position in App Store version of Slack
+    if (ActiveApplicationIsSandboxed()) {
+      return result;
+    }
     CFStringRef sourceRef = GetLines(field);
     NSData* sourceData = [(NSString*)sourceRef dataUsingEncoding:NSUTF32LittleEndianStringEncoding];
     CFRelease(sourceRef);

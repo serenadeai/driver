@@ -13,6 +13,7 @@
 
 namespace driver {
 
+bool ActiveApplicationIsSandboxed();
 void Click(const std::string& button, int count);
 bool ClickButton(AXUIElementRef element, const std::string& button, int count);
 void ClickButton(const std::string& button, int count);
