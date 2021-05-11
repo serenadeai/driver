@@ -265,6 +265,10 @@ exports.runShell = async (command, args, options) => {
   });
 };
 
+exports.select = (paragraph) => {
+  return lib.select(!!paragraph);
+};
+
 exports.setEditorState = (text, cursor, cursorEnd) => {
   if (!cursorEnd) {
     cursorEnd = 0;

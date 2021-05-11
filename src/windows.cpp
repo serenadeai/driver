@@ -373,6 +373,13 @@ std::string ProcessName(HWND window) {
   return std::string(wide.begin(), wide.end());
 }
 
+void Select(bool paragraph) {
+  PressKey(paragraph ? "up" : "home",
+           std::vector<std::string>{"control", "shift"});
+  PressKey(paragraph ? "down" : "end",
+           std::vector<std::string>{"control", "shift"});
+}
+
 void SetMouseLocation(int x, int y) { SetCursorPos(x, y); }
 
 void ToggleKey(const std::string& key, bool down) {

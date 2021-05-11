@@ -424,6 +424,7 @@ std::tuple<std::string, int, bool> GetEditorState() {
 }
 
 std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
+  long delay = 30000;
   std::tuple<std::string, int, bool> result;
   std::get<2>(result) = true;
 
@@ -436,14 +437,18 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
 
   if (paragraph) {
     PressKey("up", std::vector<std::string>{"option", "shift"});
+    usleep(delay);
   } else {
     PressKey("left", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
     PressKey("up", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
   }
 
   PressKey("c", std::vector<std::string>{"command"});
-  usleep(10000);
+  usleep(delay);
   PressKey("right", std::vector<std::string>{});
+  usleep(delay);
 
   if (pasteboard.pasteboardItems.count == 0) {
     return result;
@@ -452,13 +457,16 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
 
   if (paragraph) {
     PressKey("down", std::vector<std::string>{"option", "shift"});
+    usleep(delay);
   } else {
     PressKey("right", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
     PressKey("down", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
   }
 
   PressKey("c", std::vector<std::string>{"command"});
-  usleep(10000);
+  usleep(delay);
   PressKey("left", std::vector<std::string>{});
 
   if (pasteboard.pasteboardItems.count == 0) {
@@ -741,7 +749,7 @@ void PressKey(const std::string& key, const std::vector<std::string>& modifiers)
   ToggleKey(key, modifiers, false);
 }
 
-void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
+void SetEditorState(const std::string& text, int cursor, int cursorEnd) {
   if (AXIsProcessTrustedWithOptions(NULL)) {
     return;
   }
@@ -751,14 +759,14 @@ void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
     return;
   }
 
-  CFStringRef sourceValue = CFStringCreateWithCString(NULL, source.c_str(), kCFStringEncodingUTF8);
+  CFStringRef textValue = CFStringCreateWithCString(NULL, text.c_str(), kCFStringEncodingUTF8);
   CFTypeRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
   if (value != NULL) {
     CFRelease(value);
-    AXUIElementSetAttributeValue(field, kAXValueAttribute, sourceValue);
+    AXUIElementSetAttributeValue(field, kAXValueAttribute, textValue);
   } else {
-    AXUIElementSetAttributeValue(field, kAXTitleAttribute, sourceValue);
+    AXUIElementSetAttributeValue(field, kAXTitleAttribute, textValue);
   }
 
   int length = 0;
@@ -771,8 +779,24 @@ void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
   AXUIElementSetAttributeValue(field, kAXSelectedTextRangeAttribute, rangeValue);
 
   CFRelease(field);
-  CFRelease(sourceValue);
+  CFRelease(textValue);
   CFRelease(rangeValue);
+}
+
+void Select(bool paragraph) {
+  if (paragraph) {
+    PressKey("up", std::vector<std::string>{"option", "shift"});
+    usleep(10000);
+    PressKey("down", std::vector<std::string>{"option", "shift"});
+    usleep(10000);
+  } else {
+    PressKey("left", std::vector<std::string>{"command", "shift"});
+    usleep(10000);
+    PressKey("up", std::vector<std::string>{"command", "shift"});
+    usleep(10000);
+    PressKey("down", std::vector<std::string>{"command", "shift"});
+    usleep(10000);
+  }
 }
 
 void SetMouseLocation(int x, int y) {

@@ -14,6 +14,7 @@ Napi::Promise GetRunningApplications(const Napi::CallbackInfo& info);
 Napi::Promise MouseDown(const Napi::CallbackInfo& info);
 Napi::Promise MouseUp(const Napi::CallbackInfo& info);
 Napi::Promise PressKey(const Napi::CallbackInfo& info);
+Napi::Promise Select(const Napi::CallbackInfo& info);
 Napi::Promise SetEditorState(const Napi::CallbackInfo& info);
 Napi::Promise SetMouseLocation(const Napi::CallbackInfo& info);
 Napi::Promise TypeText(const Napi::CallbackInfo& info);

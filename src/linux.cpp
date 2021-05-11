@@ -454,6 +454,13 @@ std::string ProcessName(Display* display, Window window) {
   return path;
 }
 
+void Select(bool paragraph) {
+  PressKey(paragraph ? "up" : "home",
+           std::vector<std::string>{"control", "shift"});
+  PressKey(paragraph ? "down" : "end",
+           std::vector<std::string>{"control", "shift"});
+}
+
 void SetMouseLocation(int x, int y) {
   Display* display = XOpenDisplay(NULL);
   XWarpPointer(display, None, XDefaultRootWindow(display), 0, 0, 0, 0, x, y);
