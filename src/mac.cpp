@@ -139,6 +139,7 @@ AXUIElementRef CreateActiveTextFieldRef() {
     return field;
   }
 
+  CFRelease(field);
   return NULL;
 }
 
@@ -280,6 +281,7 @@ void FocusApplication(const std::string& application) {
       }
     }
   }
+  CFRelease(windows);
 }
 
 std::string GetActiveApplication() {
@@ -310,9 +312,11 @@ int GetActivePid() {
   for (NSDictionary* window in windows) {
     int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
     if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active) {
+      CFRelease(windows);
       return pid;
     }
   }
+  CFRelease(windows);
 
   NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
   if (running == NULL) {
@@ -526,6 +530,7 @@ std::vector<std::string> GetRunningApplications() {
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
   }
+  CFRelease(windows);
 
   for (NSNumber* pid in [pids allObjects]) {
     NSRunningApplication* app =
