@@ -12,11 +12,12 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data);
 std::string GetActiveApplication();
 std::string GetClipboard();
 std::tuple<std::string, int, bool> GetEditorState();
-std::tuple<std::string, int, bool> GetEditorStateFallback();
+std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph);
 std::tuple<int, int> GetMouseLocation();
 std::vector<std::string> GetRunningApplications();
 BOOL CALLBACK GetRunningWindows(HWND window, LPARAM data);
-std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(const std::string& key);
+std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(
+    const std::string& key);
 void InitializeUIAutomation();
 void MouseDown(const std::string& button);
 void MouseUp(const std::string& button);

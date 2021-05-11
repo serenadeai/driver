@@ -423,8 +423,9 @@ std::tuple<std::string, int, bool> GetEditorState() {
   return result;
 }
 
-std::tuple<std::string, int, bool> GetEditorStateFallback() {
+std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
   std::tuple<std::string, int, bool> result;
+  std::get<2>(result) = true;
 
   NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
   [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
@@ -433,18 +434,36 @@ std::tuple<std::string, int, bool> GetEditorStateFallback() {
     previous = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
   }
 
-  PressKey("left", std::vector<std::string>{"command", "shift"});
-  PressKey("up", std::vector<std::string>{"command", "shift"});
+  if (paragraph) {
+    PressKey("up", std::vector<std::string>{"option", "shift"});
+  } else {
+    PressKey("left", std::vector<std::string>{"command", "shift"});
+    PressKey("up", std::vector<std::string>{"command", "shift"});
+  }
+
   PressKey("c", std::vector<std::string>{"command"});
   usleep(10000);
   PressKey("right", std::vector<std::string>{});
+
+  if (pasteboard.pasteboardItems.count == 0) {
+    return result;
+  }
   NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
 
-  PressKey("right", std::vector<std::string>{"command", "shift"});
-  PressKey("down", std::vector<std::string>{"command", "shift"});
+  if (paragraph) {
+    PressKey("down", std::vector<std::string>{"option", "shift"});
+  } else {
+    PressKey("right", std::vector<std::string>{"command", "shift"});
+    PressKey("down", std::vector<std::string>{"command", "shift"});
+  }
+
   PressKey("c", std::vector<std::string>{"command"});
   usleep(10000);
   PressKey("left", std::vector<std::string>{});
+
+  if (pasteboard.pasteboardItems.count == 0) {
+    return result;
+  }
   NSString* right = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
 
   [pasteboard setString:previous forType:NSPasteboardTypeString];

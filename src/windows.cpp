@@ -98,17 +98,20 @@ std::tuple<std::string, int, bool> GetEditorState() {
   InitializeUIAutomation();
 
   IUIAutomationElement* focused;
-  if (automation_ == NULL || automation_->GetFocusedElement(&focused) != S_OK || focused == NULL) {
+  if (automation_ == NULL || automation_->GetFocusedElement(&focused) != S_OK ||
+      focused == NULL) {
     return result;
   }
 
   BOOL focusable = FALSE;
-  if (focused->get_CurrentIsKeyboardFocusable(&focusable) != S_OK || focusable == NULL || focusable == FALSE) {
+  if (focused->get_CurrentIsKeyboardFocusable(&focusable) != S_OK ||
+      focusable == NULL || focusable == FALSE) {
     return result;
   }
 
   BOOL focus = FALSE;
-  if (focused->get_CurrentHasKeyboardFocus(&focus) != S_OK || focus == NULL || focus == FALSE) {
+  if (focused->get_CurrentHasKeyboardFocus(&focus) != S_OK || focus == NULL ||
+      focus == FALSE) {
     return result;
   }
 
@@ -160,17 +163,19 @@ std::tuple<std::string, int, bool> GetEditorState() {
   return result;
 }
 
-std::tuple<std::string, int, bool> GetEditorStateFallback() {
+std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
   std::tuple<std::string, int, bool> result;
 
   std::string previous = GetClipboard();
-  PressKey("home", std::vector<std::string>{"control", "shift"});
+  PressKey(paragraph ? "up" : "home",
+           std::vector<std::string>{"control", "shift"});
   PressKey("c", std::vector<std::string>{"control"});
   Sleep(10);
   PressKey("right", std::vector<std::string>{});
   std::string left = GetClipboard();
 
-  PressKey("end", std::vector<std::string>{"control", "shift"});
+  PressKey(paragraph ? "down" : "end",
+           std::vector<std::string>{"control", "shift"});
   PressKey("c", std::vector<std::string>{"control"});
   Sleep(10);
   PressKey("left", std::vector<std::string>{});
