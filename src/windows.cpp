@@ -54,6 +54,7 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
       ShowWindow(window, SW_NORMAL);
     }
 
+    AllowSetForegroundWindow(ASFW_ANY);
     SetForegroundWindow(window);
     AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL),
                       GetCurrentThreadId(), false);
