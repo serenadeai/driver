@@ -42,7 +42,8 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
       return TRUE;
     }
 
-    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), true);
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL),
+                      GetCurrentThreadId(), true);
     WINDOWPLACEMENT placement;
     GetWindowPlacement(window, &placement);
     if (placement.showCmd == SW_SHOWMAXIMIZED) {
@@ -54,7 +55,8 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
     }
 
     SetForegroundWindow(window);
-    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), false);
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL),
+                      GetCurrentThreadId(), false);
     return FALSE;
   }
 
@@ -395,20 +397,6 @@ void RemoveNonASCII(std::string& s) {
       s[i] = ' ';
     }
   }
-}
-
-void Select(bool paragraph) {
-  if (paragraph) {
-    PressKey("home", std::vector<std::string>{});
-    Sleep(10);
-    PressKey("end", std::vector<std::string>{"shift"});
-    Sleep(10);
-    PressKey("down", std::vector<std::string>{"control", "shift"});
-  } else {
-    PressKey("a", std::vector<std::string>{"control"});
-  }
-
-  Sleep(10);
 }
 
 void SetMouseLocation(int x, int y) { SetCursorPos(x, y); }
