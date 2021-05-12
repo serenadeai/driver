@@ -8,6 +8,7 @@
 #include <cctype>
 #include <climits>
 #include <fstream>
+#include <iostream>
 #include <streambuf>
 #include <string>
 #include <tuple>
@@ -448,6 +449,10 @@ std::string ProcessName(Display* display, Window window) {
                   std::string("/cmdline"));
   std::string path((std::istreambuf_iterator<char>(t)),
                    std::istreambuf_iterator<char>());
+
+  if (path.length() > 0 && path[path.length() - 1] == '\x00') {
+    path = path.substr(0, path.length() - 1);
+  }
 
   XFree(pid);
   ToLower(path);
