@@ -840,6 +840,10 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
         adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
     }
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "commandOrControl") !=
+        adjustedModifiers.end()) {
+      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
+    }
     if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "function") !=
         adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskSecondaryFn);
