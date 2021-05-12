@@ -26,7 +26,6 @@ void MouseUp(Display* display, const std::string& button);
 void PressKey(Display* display, std::string key,
               std::vector<std::string> modifiers);
 std::string ProcessName(Display* display, Window window);
-void Select(bool paragraph);
 void SetMouseLocation(int x, int y);
 void ToggleKey(Display* display, const std::string& key, bool down);
 void ToLower(std::string& s);

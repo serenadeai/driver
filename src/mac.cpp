@@ -783,22 +783,6 @@ void SetEditorState(const std::string& text, int cursor, int cursorEnd) {
   CFRelease(rangeValue);
 }
 
-void Select(bool paragraph) {
-  if (paragraph) {
-    PressKey("up", std::vector<std::string>{"option", "shift"});
-    usleep(10000);
-    PressKey("down", std::vector<std::string>{"option", "shift"});
-    usleep(10000);
-  } else {
-    PressKey("left", std::vector<std::string>{"command", "shift"});
-    usleep(10000);
-    PressKey("up", std::vector<std::string>{"command", "shift"});
-    usleep(10000);
-    PressKey("down", std::vector<std::string>{"command", "shift"});
-    usleep(10000);
-  }
-}
-
 void SetMouseLocation(int x, int y) {
   CGEventRef event =
       CGEventCreateMouseEvent(nil, kCGEventMouseMoved, CGPointMake(x, y), kCGMouseButtonLeft);

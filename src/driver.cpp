@@ -245,16 +245,6 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
   return deferred.Promise();
 }
 
-Napi::Promise Select(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
-
-  driver::Select(info[0].As<Napi::Boolean>().Value());
-
-  deferred.Resolve(env.Undefined());
-  return deferred.Promise();
-}
-
 Napi::Promise SetEditorState(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -331,8 +321,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, MouseDown));
   exports.Set(Napi::String::New(env, "mouseUp"),
               Napi::Function::New(env, MouseUp));
-  exports.Set(Napi::String::New(env, "select"),
-              Napi::Function::New(env, Select));
   exports.Set(Napi::String::New(env, "setEditorState"),
               Napi::Function::New(env, SetEditorState));
   exports.Set(Napi::String::New(env, "setMouseLocation"),
