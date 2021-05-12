@@ -314,14 +314,14 @@ bool ActiveApplicationIsSandboxed() {
   if (SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode) == errSecSuccess) {
     if (SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSBasicValidateOnly, NULL, NULL) == errSecSuccess) {
       SecRequirementRef sandboxRequirement;
-      if (SecRequirementCreateWithString(CFSTR("entitlement[\"com.apple.security.app-sandbox\"] exists"), kSecCSDefaultFlags,
-                                    &sandboxRequirement) == errSecSuccess)
+      if (SecRequirementCreateWithString(CFSTR("entitlement[\"com.apple.security.app-sandbox\"] exists"), kSecCSDefaultFlags, &sandboxRequirement) == errSecSuccess)
       {
         OSStatus codeCheckResult = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSBasicValidateOnly, sandboxRequirement, NULL);
         if (codeCheckResult == errSecSuccess) {
             isSandboxed = true;
         }
       }
+      CFRelease(sandboxRequirement);
     }
     CFRelease(staticCode);
   }
