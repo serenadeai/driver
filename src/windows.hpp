@@ -23,6 +23,7 @@ void MouseDown(const std::string& button);
 void MouseUp(const std::string& button);
 void PressKey(const std::string& key, std::vector<std::string> modifiers);
 std::string ProcessName(HWND window);
+void RemoveNonASCII(std::string& s);
 void Select(bool paragraph);
 void SetMouseLocation(int x, int y);
 void ToggleKey(const std::string& key, bool down);

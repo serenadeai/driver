@@ -42,9 +42,7 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
       return TRUE;
     }
 
-    // in order to switch window focus, the alt key needs to be pressed down,
-    // for some reason
-    ToggleKey("alt", true);
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), true);
     WINDOWPLACEMENT placement;
     GetWindowPlacement(window, &placement);
     if (placement.showCmd == SW_SHOWMAXIMIZED) {
@@ -55,11 +53,8 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
       ShowWindow(window, SW_NORMAL);
     }
 
-    AllowSetForegroundWindow(ASFW_ANY);
     SetForegroundWindow(window);
-    ToggleKey("alt", false);
-    std::vector<std::string> m;
-    PressKey("escape", m);
+    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL), GetCurrentThreadId(), false);
     return FALSE;
   }
 
@@ -73,6 +68,10 @@ std::string GetActiveApplication() {
 
 std::string GetClipboard() {
   if (!OpenClipboard(NULL)) {
+    return "";
+  }
+
+  if (!IsClipboardFormatAvailable(CF_TEXT)) {
     return "";
   }
 
@@ -166,28 +165,45 @@ std::tuple<std::string, int, bool> GetEditorState() {
 std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
   std::tuple<std::string, int, bool> result;
 
-  std::string previous = GetClipboard();
-  PressKey(paragraph ? "up" : "home",
-           std::vector<std::string>{"control", "shift"});
+  DWORD delay = 50;
+  if (paragraph) {
+    PressKey("home", std::vector<std::string>{"shift"});
+    Sleep(delay);
+    PressKey("up", std::vector<std::string>{"control", "shift"});
+  } else {
+    PressKey("home", std::vector<std::string>{"control", "shift"});
+  }
+
+  Sleep(delay);
   PressKey("c", std::vector<std::string>{"control"});
-  Sleep(10);
+  Sleep(delay);
   PressKey("right", std::vector<std::string>{});
   std::string left = GetClipboard();
+  RemoveNonASCII(left);
 
-  PressKey(paragraph ? "down" : "end",
-           std::vector<std::string>{"control", "shift"});
+  // when copying left, the preceding newline is included
+  if (left.length() > 0 && left[0] == '\n') {
+    left = left.substr(1);
+  }
+
+  if (paragraph) {
+    PressKey("end", std::vector<std::string>{"shift"});
+    Sleep(delay);
+    PressKey("down", std::vector<std::string>{"control", "shift"});
+  } else {
+    PressKey("end", std::vector<std::string>{"control", "shift"});
+  }
+
+  Sleep(delay);
   PressKey("c", std::vector<std::string>{"control"});
-  Sleep(10);
+  Sleep(delay);
   PressKey("left", std::vector<std::string>{});
   std::string right = GetClipboard();
+  RemoveNonASCII(right);
 
-  if (previous != "") {
-    const size_t n = previous.length() + 1;
-    HGLOBAL data = GlobalAlloc(GMEM_MOVEABLE, n);
-    memcpy(GlobalLock(data), previous.c_str(), n);
-    GlobalUnlock(data);
-    EmptyClipboard();
-    SetClipboardData(CF_UNICODETEXT, data);
+  // when copying right, an extra space is included
+  if (right.length() > 0 && right[right.length() - 1] == ' ') {
+    right = right.substr(0, right.length() - 1);
   }
 
   std::get<0>(result) = left + right;
@@ -373,11 +389,26 @@ std::string ProcessName(HWND window) {
   return std::string(wide.begin(), wide.end());
 }
 
+void RemoveNonASCII(std::string& s) {
+  for (int i = 0; i < s.length(); i++) {
+    if (s[i] < 0 || s[i] > 127) {
+      s[i] = ' ';
+    }
+  }
+}
+
 void Select(bool paragraph) {
-  PressKey(paragraph ? "up" : "home",
-           std::vector<std::string>{"control", "shift"});
-  PressKey(paragraph ? "down" : "end",
-           std::vector<std::string>{"control", "shift"});
+  if (paragraph) {
+    PressKey("home", std::vector<std::string>{});
+    Sleep(10);
+    PressKey("end", std::vector<std::string>{"shift"});
+    Sleep(10);
+    PressKey("down", std::vector<std::string>{"control", "shift"});
+  } else {
+    PressKey("a", std::vector<std::string>{"control"});
+  }
+
+  Sleep(10);
 }
 
 void SetMouseLocation(int x, int y) { SetCursorPos(x, y); }
