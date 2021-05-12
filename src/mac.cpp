@@ -139,6 +139,7 @@ AXUIElementRef CreateActiveTextFieldRef() {
     return field;
   }
 
+  CFRelease(field);
   return NULL;
 }
 
@@ -280,6 +281,7 @@ void FocusApplication(const std::string& application) {
       }
     }
   }
+  CFRelease(windows);
 }
 
 std::string GetActiveApplication() {
@@ -310,9 +312,11 @@ int GetActivePid() {
   for (NSDictionary* window in windows) {
     int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
     if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active) {
+      CFRelease(windows);
       return pid;
     }
   }
+  CFRelease(windows);
 
   NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
   if (running == NULL) {
@@ -483,12 +487,20 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
 
 std::tuple<int, int> GetMouseLocation() {
   std::tuple<int, int> result;
-  CGFloat y = NSEvent.mouseLocation.y;
-  if (NSScreen.mainScreen != nil) {
-    y = NSScreen.mainScreen.frame.size.height - y;
-  }
-
   std::get<0>(result) = NSEvent.mouseLocation.x;
+
+  NSScreen *smallestScreen = NSScreen.mainScreen;
+  NSEnumerator *screens = [NSScreen.screens objectEnumerator];
+  NSScreen *screen;
+  while ((screen = screens.nextObject)){
+    if (screen.frame.size.height <= smallestScreen.frame.size.height) {
+      smallestScreen = screen;
+    }
+  };
+  CGFloat y = NSEvent.mouseLocation.y;
+  if (smallestScreen != nil) {
+    y = smallestScreen.frame.size.height - y;
+  }
   std::get<1>(result) = y;
   return result;
 }
@@ -545,6 +557,7 @@ std::vector<std::string> GetRunningApplications() {
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
   }
+  CFRelease(windows);
 
   for (NSNumber* pid in [pids allObjects]) {
     NSRunningApplication* app =

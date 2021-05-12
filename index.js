@@ -178,7 +178,7 @@ exports.launchApplication = async (application, aliases) => {
           options.cwd = data.expanded.workingDir;
         }
 
-        child_process.spawn(data.expanded.target, args, options);
+        child_process.spawn(path.basename(data.expanded.target), args, options);
       });
     } else {
       child_process.spawn(app, [], { detached: true });
@@ -274,14 +274,6 @@ exports.setEditorState = (text, cursor, cursorEnd) => {
 };
 
 exports.setMouseLocation = (x, y) => {
-  if (x < 0) {
-    x = 0;
-  }
-
-  if (y < 0) {
-    y = 0;
-  }
-
   return lib.setMouseLocation(x, y);
 };
 
