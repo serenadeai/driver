@@ -455,8 +455,10 @@ std::tuple<std::string, int, bool> GetEditorState() {
   return result;
 }
 
-std::tuple<std::string, int, bool> GetEditorStateFallback() {
+std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
+  long delay = 30000;
   std::tuple<std::string, int, bool> result;
+  std::get<2>(result) = true;
 
   NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
   [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
@@ -465,18 +467,43 @@ std::tuple<std::string, int, bool> GetEditorStateFallback() {
     previous = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
   }
 
-  PressKey("left", std::vector<std::string>{"command", "shift"});
-  PressKey("up", std::vector<std::string>{"command", "shift"});
+  if (paragraph) {
+    PressKey("up", std::vector<std::string>{"option", "shift"});
+    usleep(delay);
+  } else {
+    PressKey("left", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
+    PressKey("up", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
+  }
+
   PressKey("c", std::vector<std::string>{"command"});
-  usleep(10000);
+  usleep(delay);
   PressKey("right", std::vector<std::string>{});
+  usleep(delay);
+
+  if (pasteboard.pasteboardItems.count == 0) {
+    return result;
+  }
   NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
 
-  PressKey("right", std::vector<std::string>{"command", "shift"});
-  PressKey("down", std::vector<std::string>{"command", "shift"});
+  if (paragraph) {
+    PressKey("down", std::vector<std::string>{"option", "shift"});
+    usleep(delay);
+  } else {
+    PressKey("right", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
+    PressKey("down", std::vector<std::string>{"command", "shift"});
+    usleep(delay);
+  }
+
   PressKey("c", std::vector<std::string>{"command"});
-  usleep(10000);
+  usleep(delay);
   PressKey("left", std::vector<std::string>{});
+
+  if (pasteboard.pasteboardItems.count == 0) {
+    return result;
+  }
   NSString* right = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
 
   [pasteboard setString:previous forType:NSPasteboardTypeString];
@@ -763,7 +790,7 @@ void PressKey(const std::string& key, const std::vector<std::string>& modifiers)
   ToggleKey(key, modifiers, false);
 }
 
-void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
+void SetEditorState(const std::string& text, int cursor, int cursorEnd) {
   if (AXIsProcessTrustedWithOptions(NULL)) {
     return;
   }
@@ -773,14 +800,14 @@ void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
     return;
   }
 
-  CFStringRef sourceValue = CFStringCreateWithCString(NULL, source.c_str(), kCFStringEncodingUTF8);
+  CFStringRef textValue = CFStringCreateWithCString(NULL, text.c_str(), kCFStringEncodingUTF8);
   CFTypeRef value = NULL;
   AXUIElementCopyAttributeValue(field, kAXValueAttribute, reinterpret_cast<CFTypeRef*>(&value));
   if (value != NULL) {
     CFRelease(value);
-    AXUIElementSetAttributeValue(field, kAXValueAttribute, sourceValue);
+    AXUIElementSetAttributeValue(field, kAXValueAttribute, textValue);
   } else {
-    AXUIElementSetAttributeValue(field, kAXTitleAttribute, sourceValue);
+    AXUIElementSetAttributeValue(field, kAXTitleAttribute, textValue);
   }
 
   int length = 0;
@@ -793,7 +820,7 @@ void SetEditorState(const std::string& source, int cursor, int cursorEnd) {
   AXUIElementSetAttributeValue(field, kAXSelectedTextRangeAttribute, rangeValue);
 
   CFRelease(field);
-  CFRelease(sourceValue);
+  CFRelease(textValue);
   CFRelease(rangeValue);
 }
 
@@ -851,6 +878,10 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
     }
     if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "cmd") !=
+        adjustedModifiers.end()) {
+      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
+    }
+    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "commandOrControl") !=
         adjustedModifiers.end()) {
       CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
     }

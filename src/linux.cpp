@@ -8,6 +8,7 @@
 #include <cctype>
 #include <climits>
 #include <fstream>
+#include <iostream>
 #include <streambuf>
 #include <string>
 #include <tuple>
@@ -126,19 +127,23 @@ std::tuple<std::string, int, bool> GetEditorState(Display* display) {
   return result;
 }
 
-std::tuple<std::string, int, bool> GetEditorStateFallback(Display* display) {
+std::tuple<std::string, int, bool> GetEditorStateFallback(Display* display,
+                                                          bool paragraph) {
   std::tuple<std::string, int, bool> result;
 
   unsigned long color = BlackPixel(display, DefaultScreen(display));
   Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0,
                                       1, 1, 0, color, color);
-  PressKey(display, "home", std::vector<std::string>{"control", "shift"});
+
+  PressKey(display, paragraph ? "up" : "home",
+           std::vector<std::string>{"control", "shift"});
   PressKey(display, "c", std::vector<std::string>{"control"});
   usleep(10000);
   PressKey(display, "right", std::vector<std::string>{});
   std::string left = GetClipboard(display, window);
 
-  PressKey(display, "end", std::vector<std::string>{"control", "shift"});
+  PressKey(display, paragraph ? "down" : "end",
+           std::vector<std::string>{"control", "shift"});
   PressKey(display, "c", std::vector<std::string>{"control"});
   usleep(10000);
   PressKey(display, "left", std::vector<std::string>{});
@@ -444,6 +449,10 @@ std::string ProcessName(Display* display, Window window) {
                   std::string("/cmdline"));
   std::string path((std::istreambuf_iterator<char>(t)),
                    std::istreambuf_iterator<char>());
+
+  if (path.length() > 0 && path[path.length() - 1] == '\x00') {
+    path = path.substr(0, path.length() - 1);
+  }
 
   XFree(pid);
   ToLower(path);

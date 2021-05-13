@@ -85,8 +85,8 @@ exports.getEditorState = () => {
   return lib.getEditorState();
 };
 
-exports.getEditorStateFallback = () => {
-  return lib.getEditorStateFallback();
+exports.getEditorStateFallback = (paragraph) => {
+  return lib.getEditorStateFallback(!!paragraph);
 };
 
 exports.getInstalledApplications = async () => {
@@ -219,6 +219,10 @@ exports.pressKey = (key, modifiers, count) => {
 };
 
 exports.quitApplication = async (application, aliases) => {
+  if (!application) {
+    return;
+  }
+
   if (
     applicationMatches(application, await exports.getRunningApplications(), aliases).length == 0
   ) {
@@ -233,6 +237,7 @@ exports.quitApplication = async (application, aliases) => {
   }
 
   await lib.focusApplication(application);
+  await exports.delay(100);
   return lib.pressKey(key, modifiers, 1);
 };
 

@@ -23,17 +23,16 @@
 #endif
 
 #ifdef __APPLE__
-#define AUTORELEASE(statement) { \
-  @autoreleasepool { \
-    statement; \
-  } \
-}
+#define AUTORELEASE(statement) \
+  {                            \
+    @autoreleasepool {         \
+      statement;               \
+    }                          \
+  }
 #else
-#define AUTORELEASE(statement) { \
-  statement; \
-}
+#define AUTORELEASE(statement) \
+  { statement; }
 #endif
-
 
 Napi::Promise Click(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
@@ -145,14 +144,15 @@ Napi::Promise GetEditorStateFallback(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
+  bool paragraph = info[0].As<Napi::Boolean>().Value();
+
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
-  std::tuple<std::string, int, bool> state =
-      driver::GetEditorStateFallback(display);
+  std::tuple<std::string, int, bool> state = driver::GetEditorStateFallback(display, paragraph);
   XCloseDisplay(display);
 #else
   std::tuple<std::string, int, bool> state;
-  AUTORELEASE(state = driver::GetEditorStateFallback());
+  AUTORELEASE(state = driver::GetEditorStateFallback(paragraph));
 #endif
 
   Napi::Object result = Napi::Object::New(env);
@@ -249,8 +249,7 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
 
   for (int i = 0; i < count; i++) {
 #ifdef __linux__
-    driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(),
-                     modifiers);
+    driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(), modifiers);
     usleep(100000);
 #else
     AUTORELEASE(driver::PressKey(info[0].As<Napi::String>().Utf8Value(), modifiers));
@@ -271,8 +270,8 @@ Napi::Promise SetEditorState(const Napi::CallbackInfo& info) {
 
 #ifdef __APPLE__
   AUTORELEASE(driver::SetEditorState(info[0].As<Napi::String>().Utf8Value(),
-                          info[1].As<Napi::Number>().Int32Value(),
-                          info[2].As<Napi::Number>().Int32Value()));
+                                     info[1].As<Napi::Number>().Int32Value(),
+                                     info[2].As<Napi::Number>().Int32Value()));
 #endif
 
   deferred.Resolve(env.Undefined());
@@ -284,7 +283,7 @@ Napi::Promise SetMouseLocation(const Napi::CallbackInfo& info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
   AUTORELEASE(driver::SetMouseLocation(info[0].As<Napi::Number>().Int32Value(),
-                            info[1].As<Napi::Number>().Int32Value()));
+                                       info[1].As<Napi::Number>().Int32Value()));
 
   deferred.Resolve(env.Undefined());
   return deferred.Promise();
@@ -319,34 +318,27 @@ Napi::Promise TypeText(const Napi::CallbackInfo& info) {
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "click"), Napi::Function::New(env, Click));
-  exports.Set(Napi::String::New(env, "clickButton"),
-              Napi::Function::New(env, ClickButton));
+  exports.Set(Napi::String::New(env, "clickButton"), Napi::Function::New(env, ClickButton));
   exports.Set(Napi::String::New(env, "focusApplication"),
               Napi::Function::New(env, FocusApplication));
   exports.Set(Napi::String::New(env, "getActiveApplication"),
               Napi::Function::New(env, GetActiveApplication));
   exports.Set(Napi::String::New(env, "getClickableButtons"),
               Napi::Function::New(env, GetClickableButtons));
-  exports.Set(Napi::String::New(env, "getEditorState"),
-              Napi::Function::New(env, GetEditorState));
+  exports.Set(Napi::String::New(env, "getEditorState"), Napi::Function::New(env, GetEditorState));
   exports.Set(Napi::String::New(env, "getEditorStateFallback"),
               Napi::Function::New(env, GetEditorStateFallback));
   exports.Set(Napi::String::New(env, "getMouseLocation"),
               Napi::Function::New(env, GetMouseLocation));
   exports.Set(Napi::String::New(env, "getRunningApplications"),
               Napi::Function::New(env, GetRunningApplications));
-  exports.Set(Napi::String::New(env, "pressKey"),
-              Napi::Function::New(env, PressKey));
-  exports.Set(Napi::String::New(env, "mouseDown"),
-              Napi::Function::New(env, MouseDown));
-  exports.Set(Napi::String::New(env, "mouseUp"),
-              Napi::Function::New(env, MouseUp));
-  exports.Set(Napi::String::New(env, "setEditorState"),
-              Napi::Function::New(env, SetEditorState));
+  exports.Set(Napi::String::New(env, "pressKey"), Napi::Function::New(env, PressKey));
+  exports.Set(Napi::String::New(env, "mouseDown"), Napi::Function::New(env, MouseDown));
+  exports.Set(Napi::String::New(env, "mouseUp"), Napi::Function::New(env, MouseUp));
+  exports.Set(Napi::String::New(env, "setEditorState"), Napi::Function::New(env, SetEditorState));
   exports.Set(Napi::String::New(env, "setMouseLocation"),
               Napi::Function::New(env, SetMouseLocation));
-  exports.Set(Napi::String::New(env, "typeText"),
-              Napi::Function::New(env, TypeText));
+  exports.Set(Napi::String::New(env, "typeText"), Napi::Function::New(env, TypeText));
 
   return exports;
 }
