@@ -7,6 +7,7 @@
 #include <winuser.h>
 
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <string>
 #include <tuple>
@@ -27,7 +28,9 @@ void Click(const std::string& button, int count) {
 }
 
 void FocusApplication(const std::string& application) {
-  EnumWindows(FocusWindow, reinterpret_cast<LPARAM>(&application));
+  std::string lower = application;
+  ToLower(lower);
+  EnumWindows(FocusWindow, reinterpret_cast<LPARAM>(&lower));
 }
 
 BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
@@ -388,8 +391,11 @@ std::string ProcessName(HWND window) {
   wchar_t path[1024];
   HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
   GetProcessImageFileNameW(process, path, 1024);
+
   std::wstring wide(path);
-  return std::string(wide.begin(), wide.end());
+  std::string result(wide.begin(), wide.end());
+  ToLower(result);
+  return result;
 }
 
 void RemoveNonASCII(std::string& s) {
@@ -430,6 +436,10 @@ void ToggleKey(const std::string& key, bool down) {
     ToggleKey("control", false);
     ToggleKey("alt", false);
   }
+}
+
+void ToLower(std::string& s) {
+  std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
 }
 
 }  // namespace driver

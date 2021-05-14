@@ -26,5 +26,7 @@ std::string ProcessName(HWND window);
 void RemoveNonASCII(std::string& s);
 void SetMouseLocation(int x, int y);
 void ToggleKey(const std::string& key, bool down);
+void ToLower(std::string& s);
+
 
 }  // namespace driver
