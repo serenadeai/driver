@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "linux.hpp"
+#include "util.hpp"
 
 namespace driver {
 
@@ -27,9 +28,6 @@ void Click(Display* display, const std::string& button, int count) {
 
 void FocusApplication(const std::string& application) {
   Display* display = XOpenDisplay(NULL);
-  std::string lower = application;
-  ToLower(lower);
-
   std::vector<Window> windows = GetAllWindows(display);
   for (Window window : windows) {
     std::string name = ProcessName(display, window);
@@ -456,6 +454,7 @@ std::string ProcessName(Display* display, Window window) {
 
   XFree(pid);
   ToLower(path);
+  RemoveSpaces(path);
   return path;
 }
 
@@ -475,11 +474,6 @@ void ToggleKey(Display* display, const std::string& key, bool down) {
 
   XTestFakeKeyEvent(display, keycode, down, CurrentTime);
   XFlush(display);
-}
-
-void ToLower(std::string& s) {
-  std::transform(s.begin(), s.end(), s.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
 }
 
 }  // namespace driver
