@@ -278,8 +278,7 @@ void FocusApplication(const std::string& application) {
       if ([app.bundleURL.path.lowercaseString containsString:name]) {
         [app unhide];
         [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
-        CFRelease(windows);
-        return;
+        break;
       }
     }
   }
