@@ -13,7 +13,7 @@ const applicationMatches = (application, possible, aliases) => {
 
   return possible.filter((e) => {
     const possibility = normalizeApplication(e);
-    possibility.includes(application) || possibility.includes(alias);
+    return possibility.includes(application) || possibility.includes(alias);
   });
 };
 
