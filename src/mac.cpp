@@ -278,9 +278,11 @@ void FocusApplication(const std::string& application) {
       if ([app.bundleURL.path.lowercaseString containsString:name]) {
         [app unhide];
         [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+        return;
       }
     }
   }
+
   CFRelease(windows);
 }
 
@@ -303,30 +305,40 @@ std::string GetActiveApplication() {
 
   NSRunningApplication* running =
       [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
-  return [[NSString stringWithFormat:@"%@", running.bundleURL.path] UTF8String];
+  return [[[NSString stringWithFormat:@"%@", running.bundleURL.path.lowercaseString]
+      stringByReplacingOccurrencesOfString:@" "
+                                withString:@""] UTF8String];
 }
 
 bool ActiveApplicationIsSandboxed() {
   int pid = GetActivePid();
-  NSRunningApplication* running = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
-  NSURL *bundleURL = running.bundleURL;
+  NSRunningApplication* running =
+      [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+  NSURL* bundleURL = running.bundleURL;
   SecStaticCodeRef staticCode = NULL;
   bool isSandboxed = false;
 
-  if (SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode) == errSecSuccess) {
-    if (SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSBasicValidateOnly, NULL, NULL) == errSecSuccess) {
+  if (SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode) ==
+      errSecSuccess) {
+    if (SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSBasicValidateOnly, NULL, NULL) ==
+        errSecSuccess) {
       SecRequirementRef sandboxRequirement;
-      if (SecRequirementCreateWithString(CFSTR("entitlement[\"com.apple.security.app-sandbox\"] exists"), kSecCSDefaultFlags, &sandboxRequirement) == errSecSuccess)
-      {
-        OSStatus codeCheckResult = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSBasicValidateOnly, sandboxRequirement, NULL);
+      if (SecRequirementCreateWithString(
+              CFSTR("entitlement[\"com.apple.security.app-sandbox\"] exists"), kSecCSDefaultFlags,
+              &sandboxRequirement) == errSecSuccess) {
+        OSStatus codeCheckResult = SecStaticCodeCheckValidityWithErrors(
+            staticCode, kSecCSBasicValidateOnly, sandboxRequirement, NULL);
         if (codeCheckResult == errSecSuccess) {
-            isSandboxed = true;
+          isSandboxed = true;
         }
       }
+
       CFRelease(sandboxRequirement);
     }
+
     CFRelease(staticCode);
   }
+
   return isSandboxed;
 }
 
@@ -517,10 +529,10 @@ std::tuple<int, int> GetMouseLocation() {
   std::tuple<int, int> result;
   std::get<0>(result) = NSEvent.mouseLocation.x;
 
-  NSScreen *smallestScreen = NSScreen.mainScreen;
-  NSEnumerator *screens = [NSScreen.screens objectEnumerator];
-  NSScreen *screen;
-  while ((screen = screens.nextObject)){
+  NSScreen* smallestScreen = NSScreen.mainScreen;
+  NSEnumerator* screens = [NSScreen.screens objectEnumerator];
+  NSScreen* screen;
+  while ((screen = screens.nextObject)) {
     if (screen.frame.size.height <= smallestScreen.frame.size.height) {
       smallestScreen = screen;
     }
@@ -592,7 +604,9 @@ std::vector<std::string> GetRunningApplications() {
         [NSRunningApplication runningApplicationWithProcessIdentifier:[pid intValue]];
 
     if (app != NULL) {
-      result.push_back([app.bundleURL.path UTF8String]);
+      result.push_back([[app.bundleURL.path.lowercaseString
+          stringByReplacingOccurrencesOfString:@" "
+                                    withString:@""] UTF8String]);
     }
   }
 

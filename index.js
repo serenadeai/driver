@@ -11,12 +11,7 @@ const applicationMatches = (application, possible, aliases) => {
     alias = aliases[alias];
   }
 
-  return possible.filter(
-    (e) =>
-      e.toLowerCase().includes(application.toLowerCase()) ||
-      e.toLowerCase().includes(application.toLowerCase().replace(/\s/g, "")) ||
-      e.toLowerCase().includes(alias)
-  );
+  return possible.filter((e) => e.includes(application) || e.includes(alias));
 };
 
 exports.click = (button, count) => {
@@ -56,6 +51,8 @@ exports.delay = (timeout) => {
 };
 
 exports.focusApplication = async (application, aliases) => {
+  application = application.toLowerCase().replace(/ /g, "");
+
   // if we have an exact match without any aliasing, then prioritize that
   if (applicationMatches(application, await exports.getRunningApplications(), {}).length > 0) {
     return lib.focusApplication(application);
@@ -71,13 +68,13 @@ exports.focusApplication = async (application, aliases) => {
 };
 
 exports.focusOrLaunchApplication = async (application, aliases) => {
+  application = application.toLowerCase().replace(/ /g, "");
   const running = await exports.getRunningApplications();
 
   // if we have an exact match or an aliased match, then we want to focus instead of launching
-  const matching = (
+  const matching =
     applicationMatches(application, running, aliases).length > 0 ||
-    applicationMatches(application, running, {}).length > 0
-  );
+    applicationMatches(application, running, {}).length > 0;
 
   if (matching.length == 0) {
     return exports.launchApplication(application, aliases);
@@ -161,6 +158,7 @@ exports.launchApplication = async (application, aliases) => {
     return;
   }
 
+  application = application.toLowerCase().replace(/ /g, "");
   const matching = applicationMatches(
     application,
     await exports.getInstalledApplications(),
