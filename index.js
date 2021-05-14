@@ -6,12 +6,19 @@ const shortcut = require("windows-shortcuts");
 const lib = require("bindings")("serenade-driver.node");
 
 const applicationMatches = (application, possible, aliases) => {
-  let alias = application.toLowerCase();
-  if (aliases && aliases[alias]) {
-    alias = aliases[alias];
+  let alias = application;
+  if (aliases && aliases[application]) {
+    alias = normalizeApplication(aliases[application]);
   }
 
-  return possible.filter((e) => e.includes(application) || e.includes(alias));
+  return possible.filter((e) => {
+    const possibility = normalizeApplication(e);
+    possibility.includes(application) || possibility.includes(alias);
+  });
+};
+
+const normalizeApplication = (s) => {
+  return s.toLowerCase().replace(/ /g, "");
 };
 
 exports.click = (button, count) => {
@@ -51,7 +58,7 @@ exports.delay = (timeout) => {
 };
 
 exports.focusApplication = async (application, aliases) => {
-  application = application.toLowerCase().replace(/ /g, "");
+  application = normalizeApplication(application);
 
   // if we have an exact match without any aliasing, then prioritize that
   if (applicationMatches(application, await exports.getRunningApplications(), {}).length > 0) {
@@ -59,16 +66,15 @@ exports.focusApplication = async (application, aliases) => {
   }
 
   // otherwise, try to focus using the alias map
-  let alias = application.toLowerCase();
-  if (aliases && aliases[alias]) {
-    alias = aliases[alias];
+  if (aliases && aliases[application]) {
+    application = normalizeApplication(aliases[application]);
   }
 
-  return lib.focusApplication(alias);
+  return lib.focusApplication(application);
 };
 
 exports.focusOrLaunchApplication = async (application, aliases) => {
-  application = application.toLowerCase().replace(/ /g, "");
+  application = normalizeApplication(application);
   const running = await exports.getRunningApplications();
 
   // if we have an exact match or an aliased match, then we want to focus instead of launching
@@ -158,7 +164,7 @@ exports.launchApplication = async (application, aliases) => {
     return;
   }
 
-  application = application.toLowerCase().replace(/ /g, "");
+  application = normalizeApplication(application);
   const matching = applicationMatches(
     application,
     await exports.getInstalledApplications(),
