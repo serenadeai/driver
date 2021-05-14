@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "windows.hpp"
+#include "util.hpp"
 
 namespace driver {
 
@@ -68,8 +69,7 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
 }
 
 std::string GetActiveApplication() {
-  HWND active = GetForegroundWindow();
-  return ProcessName(active);
+  return ProcessName(GetForegroundWindow());
 }
 
 std::string GetClipboard() {
@@ -395,6 +395,7 @@ std::string ProcessName(HWND window) {
   std::wstring wide(path);
   std::string result(wide.begin(), wide.end());
   ToLower(result);
+  RemoveSpaces(result);
   return result;
 }
 
@@ -437,9 +438,4 @@ void ToggleKey(const std::string& key, bool down) {
     ToggleKey("alt", false);
   }
 }
-
-void ToLower(std::string& s) {
-  std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
-}
-
 }  // namespace driver
