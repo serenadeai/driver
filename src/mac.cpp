@@ -603,7 +603,7 @@ std::vector<std::string> GetRunningApplications() {
     NSRunningApplication* app =
         [NSRunningApplication runningApplicationWithProcessIdentifier:[pid intValue]];
 
-    if (app != NULL) {
+    if (app != NULL && ![app.bundleURL.path.lowercaseString hasSuffix:@".xpc"]) {
       result.push_back([[app.bundleURL.path.lowercaseString
           stringByReplacingOccurrencesOfString:@" "
                                     withString:@""] UTF8String]);
