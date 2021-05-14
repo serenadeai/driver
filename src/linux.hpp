@@ -28,6 +28,5 @@ void PressKey(Display* display, std::string key,
 std::string ProcessName(Display* display, Window window);
 void SetMouseLocation(int x, int y);
 void ToggleKey(Display* display, const std::string& key, bool down);
-void ToLower(std::string& s);
 
 }  // namespace driver

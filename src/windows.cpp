@@ -7,12 +7,14 @@
 #include <winuser.h>
 
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include "windows.hpp"
+#include "util.hpp"
 
 namespace driver {
 
@@ -27,7 +29,9 @@ void Click(const std::string& button, int count) {
 }
 
 void FocusApplication(const std::string& application) {
-  EnumWindows(FocusWindow, reinterpret_cast<LPARAM>(&application));
+  std::string lower = application;
+  ToLower(lower);
+  EnumWindows(FocusWindow, reinterpret_cast<LPARAM>(&lower));
 }
 
 BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
@@ -65,8 +69,7 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
 }
 
 std::string GetActiveApplication() {
-  HWND active = GetForegroundWindow();
-  return ProcessName(active);
+  return ProcessName(GetForegroundWindow());
 }
 
 std::string GetClipboard() {
@@ -388,8 +391,12 @@ std::string ProcessName(HWND window) {
   wchar_t path[1024];
   HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
   GetProcessImageFileNameW(process, path, 1024);
+
   std::wstring wide(path);
-  return std::string(wide.begin(), wide.end());
+  std::string result(wide.begin(), wide.end());
+  ToLower(result);
+  RemoveSpaces(result);
+  return result;
 }
 
 void RemoveNonASCII(std::string& s) {
@@ -431,5 +438,4 @@ void ToggleKey(const std::string& key, bool down) {
     ToggleKey("alt", false);
   }
 }
-
 }  // namespace driver
