@@ -345,14 +345,18 @@ bool ActiveApplicationIsSandboxed() {
 int GetActivePid() {
   NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
       kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
-  for (NSDictionary* window in windows) {
-    int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
-    if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active) {
-      CFRelease(windows);
-      return pid;
+  // CGWindowListCopyWindowInfo can return NULL if there is no window server running or if we
+  // are outside of a GUI security session (can happen during update + restart)
+  if (windows != NULL) {
+    for (NSDictionary* window in windows) {
+      int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
+      if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active) {
+        CFRelease(windows);
+        return pid;
+      }
     }
+    CFRelease(windows);
   }
-  CFRelease(windows);
 
   NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
   if (running == NULL) {
