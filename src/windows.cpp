@@ -46,8 +46,6 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
       return TRUE;
     }
 
-    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL),
-                      GetCurrentThreadId(), true);
     WINDOWPLACEMENT placement;
     GetWindowPlacement(window, &placement);
     if (placement.showCmd == SW_SHOWMAXIMIZED) {
@@ -58,10 +56,9 @@ BOOL CALLBACK FocusWindow(HWND window, LPARAM data) {
       ShowWindow(window, SW_NORMAL);
     }
 
+    ToggleKey("alt", false);
     AllowSetForegroundWindow(ASFW_ANY);
     SetForegroundWindow(window);
-    AttachThreadInput(GetWindowThreadProcessId(GetForegroundWindow(), NULL),
-                      GetCurrentThreadId(), false);
     return FALSE;
   }
 
