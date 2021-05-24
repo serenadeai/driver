@@ -900,7 +900,7 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
   CFRelease(event);
 
   // determined empirically by typing into a variety of applications
-  usleep(4000);
+  usleep(8000);
 }
 
 void ToLower(std::string& s) {
