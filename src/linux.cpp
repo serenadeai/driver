@@ -43,6 +43,10 @@ void FocusApplication(const std::string& application) {
       event.data.l[1] = CurrentTime;
 
       Window root = XDefaultRootWindow(display);
+      if (root == 0) {
+        return;
+      }
+
       XSendEvent(display, root, 0,
                  SubstructureRedirectMask | SubstructureNotifyMask,
                  (XEvent*)&event);
@@ -56,9 +60,16 @@ void FocusApplication(const std::string& application) {
 std::string GetActiveApplication() {
   Display* display = XOpenDisplay(NULL);
   Window root = XDefaultRootWindow(display);
+  if (root == 0) {
+    return "";
+  }
+
   unsigned long length = 0;
   unsigned char* property = 0;
   GetProperty(display, root, "_NET_ACTIVE_WINDOW", &property, &length);
+  if (property == 0) {
+    return "";
+  }
 
   Window* window = (Window*)property;
   std::string result = ProcessName(display, *window);
@@ -69,12 +80,19 @@ std::string GetActiveApplication() {
 }
 
 std::vector<Window> GetAllWindows(Display* display) {
+  std::vector<Window> result;
   Window root = XDefaultRootWindow(display);
+  if (root == 0) {
+    return result;
+  }
+
   unsigned long length = 0;
   unsigned char* property = 0;
   GetProperty(display, root, "_NET_CLIENT_LIST", &property, &length);
+  if (property == 0) {
+    return result;
+  }
 
-  std::vector<Window> result;
   Window* windows = (Window*)property;
   for (unsigned long i = 0; i < length; i++) {
     result.push_back(windows[i]);
@@ -85,6 +103,10 @@ std::vector<Window> GetAllWindows(Display* display) {
 }
 
 std::string GetClipboard(Display* display, Window window) {
+  if (window == 0) {
+    return "";
+  }
+
   Atom buffer = XInternAtom(display, "CLIPBOARD", False);
   Atom format = XInternAtom(display, "STRING", False);
   Atom property = XInternAtom(display, "XSEL_DATA", False);
@@ -343,6 +365,10 @@ std::tuple<int, int> GetMouseLocation() {
   std::tuple<int, int> result;
   Display* display = XOpenDisplay(NULL);
   Window root = XDefaultRootWindow(display);
+  if (root == 0) {
+    return result;
+  }
+
   Window rootReturn;
   Window childReturn;
   int x = 0;
@@ -438,9 +464,16 @@ void PressKey(Display* display, std::string key,
 }
 
 std::string ProcessName(Display* display, Window window) {
+  if (window == 0) {
+    return "";
+  }
+
   unsigned long length = 0;
   unsigned char* property = 0;
   GetProperty(display, window, "_NET_WM_PID", &property, &length);
+  if (property == 0) {
+    return "";
+  }
 
   unsigned long* pid = (unsigned long*)property;
   std::ifstream t(std::string("/proc/") + std::to_string(*pid) +
