@@ -103,6 +103,10 @@ std::vector<Window> GetAllWindows(Display* display) {
 }
 
 std::string GetClipboard(Display* display, Window window) {
+  if (window == 0) {
+    return "";
+  }
+
   Atom buffer = XInternAtom(display, "CLIPBOARD", False);
   Atom format = XInternAtom(display, "STRING", False);
   Atom property = XInternAtom(display, "XSEL_DATA", False);
