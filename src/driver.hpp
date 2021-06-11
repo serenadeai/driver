@@ -16,6 +16,8 @@ Napi::Promise MouseUp(const Napi::CallbackInfo& info);
 Napi::Promise PressKey(const Napi::CallbackInfo& info);
 Napi::Promise SetEditorState(const Napi::CallbackInfo& info);
 Napi::Promise SetMouseLocation(const Napi::CallbackInfo& info);
+Napi::Promise ToggleKey(const Napi::CallbackInfo& info, bool down);
+void ToStringVector(const Napi::Array input, std::vector<std::string>& output);
 Napi::Promise TypeText(const Napi::CallbackInfo& info);
 
 Napi::Object Init(Napi::Env env, Napi::Object exports);

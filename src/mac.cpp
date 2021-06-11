@@ -484,18 +484,18 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
   }
 
   if (paragraph) {
-    PressKey("up", std::vector<std::string>{"option", "shift"});
+    PressKey("up", std::vector<std::string>{"option", "shift"}, std::vector<std::string>{});
     usleep(delay);
   } else {
-    PressKey("left", std::vector<std::string>{"command", "shift"});
+    PressKey("left", std::vector<std::string>{"command", "shift"}, std::vector<std::string>{});
     usleep(delay);
-    PressKey("up", std::vector<std::string>{"command", "shift"});
+    PressKey("up", std::vector<std::string>{"command", "shift"}, std::vector<std::string>{});
     usleep(delay);
   }
 
-  PressKey("c", std::vector<std::string>{"command"});
+  PressKey("c", std::vector<std::string>{"command"}, std::vector<std::string>{});
   usleep(delay);
-  PressKey("right", std::vector<std::string>{});
+  PressKey("right", std::vector<std::string>{}, std::vector<std::string>{});
   usleep(delay);
 
   if (pasteboard.pasteboardItems.count == 0) {
@@ -504,18 +504,18 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
   NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
 
   if (paragraph) {
-    PressKey("down", std::vector<std::string>{"option", "shift"});
+    PressKey("down", std::vector<std::string>{"option", "shift"}, std::vector<std::string>{});
     usleep(delay);
   } else {
-    PressKey("right", std::vector<std::string>{"command", "shift"});
+    PressKey("right", std::vector<std::string>{"command", "shift"}, std::vector<std::string>{});
     usleep(delay);
-    PressKey("down", std::vector<std::string>{"command", "shift"});
+    PressKey("down", std::vector<std::string>{"command", "shift"}, std::vector<std::string>{});
     usleep(delay);
   }
 
-  PressKey("c", std::vector<std::string>{"command"});
+  PressKey("c", std::vector<std::string>{"command"}, std::vector<std::string>{});
   usleep(delay);
-  PressKey("left", std::vector<std::string>{});
+  PressKey("left", std::vector<std::string>{}, std::vector<std::string>{});
 
   if (pasteboard.pasteboardItems.count == 0) {
     return result;
@@ -803,9 +803,10 @@ void MouseUp(const std::string& button) {
   CFRelease(event);
 }
 
-void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
-  ToggleKey(key, modifiers, true);
-  ToggleKey(key, modifiers, false);
+void PressKey(const std::string& key, const std::vector<std::string>& modifiers,
+              const std::vector<std::string>& stickyModifiers) {
+  ToggleKey(key, modifiers, stickyModifiers, true);
+  ToggleKey(key, modifiers, stickyModifiers, false);
 }
 
 void SetEditorState(const std::string& text, int cursor, int cursorEnd) {
@@ -842,6 +843,39 @@ void SetEditorState(const std::string& text, int cursor, int cursorEnd) {
   CFRelease(rangeValue);
 }
 
+void SetEventFlags(CGEventRef& event, const std::vector<std::string>& modifiers) {
+  if (std::find(modifiers.begin(), modifiers.end(), "shift") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskShift);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "control") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskControl);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "ctrl") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskControl);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "alt") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskAlternate);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "option") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskAlternate);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "command") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "cmd") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "commandOrControl") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "function") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskSecondaryFn);
+  }
+  if (std::find(modifiers.begin(), modifiers.end(), "fn") != modifiers.end()) {
+    CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskSecondaryFn);
+  }
+}
+
 void SetMouseLocation(int x, int y) {
   CGEventRef event =
       CGEventCreateMouseEvent(nil, kCGEventMouseMoved, CGPointMake(x, y), kCGMouseButtonLeft);
@@ -850,7 +884,8 @@ void SetMouseLocation(int x, int y) {
   usleep(100000);
 }
 
-void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down) {
+void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers,
+               const std::vector<std::string>& stickyModifiers, bool down) {
   std::vector<std::string> adjustedModifiers = modifiers;
   std::tuple<CGKeyCode, bool, bool> keycode = GetVirtualKeyAndModifiers(key);
   if (std::get<1>(keycode)) {
@@ -870,47 +905,9 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
   }
 
   CGEventSetFlags(event, 0);
+  SetEventFlags(event, stickyModifiers);
   if (down) {
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "shift") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskShift);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "control") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskControl);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "ctrl") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskControl);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "alt") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskAlternate);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "option") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskAlternate);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "command") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "cmd") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "commandOrControl") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskCommand);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "function") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskSecondaryFn);
-    }
-    if (std::find(adjustedModifiers.begin(), adjustedModifiers.end(), "fn") !=
-        adjustedModifiers.end()) {
-      CGEventSetFlags(event, CGEventGetFlags(event) | kCGEventFlagMaskSecondaryFn);
-    }
+    SetEventFlags(event, adjustedModifiers);
   }
 
   CGEventPost(kCGHIDEventTap, event);

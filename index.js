@@ -5,6 +5,8 @@ const path = require("path");
 const shortcut = require("windows-shortcuts");
 const lib = require("bindings")("serenade-driver.node");
 
+let stickyModifiers = [];
+
 const applicationMatches = (application, possible, aliases) => {
   let alias = application;
   if (aliases && aliases[application]) {
@@ -114,14 +116,16 @@ exports.getInstalledApplications = async () => {
 
     return new Promise(async (resolve) => {
       fs.readdir(root, { withFileTypes: true }, async (error, files) => {
-        for (let e of files) {
-          const file = path.join(root, e.name);
-          if (os.platform() == "darwin" && file.endsWith(".app")) {
-            result.push(file);
-          } else if (os.platform() == "win32" && file.endsWith(".lnk")) {
-            result.push(file);
-          } else if (e.isDirectory()) {
-            result = result.concat(await search(file, depth + 1, max));
+        if (!error && files && files.length) {
+          for (let e of files) {
+            const file = path.join(root, e.name);
+            if (os.platform() == "darwin" && file.endsWith(".app")) {
+              result.push(file);
+            } else if (os.platform() == "win32" && file.endsWith(".lnk")) {
+              result.push(file);
+            } else if (e.isDirectory()) {
+              result = result.concat(await search(file, depth + 1, max));
+            }
           }
         }
 
@@ -203,6 +207,17 @@ exports.launchApplication = async (application, aliases) => {
   }
 };
 
+exports.keyDown = (key) => {
+  stickyModifiers.push(key);
+  return lib.keyDown(key, stickyModifiers);
+};
+
+exports.keyUp = (key) => {
+  stickyModifiers = stickyModifiers.filter((e) => e != key);
+  const result = lib.keyUp(key, stickyModifiers);
+  return result;
+};
+
 exports.mouseDown = (button) => {
   if (!button) {
     button = "left";
@@ -232,7 +247,7 @@ exports.pressKey = (key, modifiers, count) => {
     return;
   }
 
-  return lib.pressKey(key, modifiers, count);
+  return lib.pressKey(key, modifiers, stickyModifiers, count);
 };
 
 exports.quitApplication = async (application, aliases) => {

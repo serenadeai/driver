@@ -42,12 +42,15 @@ bool HasActionName(AXUIElementRef element, CFStringRef name);
 bool IsButton(AXUIElementRef element);
 void MouseDown(const std::string& button);
 void MouseUp(const std::string& button);
-void PressKey(const std::string& key,
-              const std::vector<std::string>& modifiers);
+void PressKey(const std::string& key, const std::vector<std::string>& modifiers,
+              const std::vector<std::string>& stickyModifiers);
 void SetEditorState(const std::string& text, int cursor, int cursorEnd);
+void SetEventFlags(CGEventRef& event,
+                   const std::vector<std::string>& modifiers);
 void SetMouseLocation(int x, int y);
 void ToggleKey(const std::string& key,
-               const std::vector<std::string>& modifiers, bool down);
+               const std::vector<std::string>& modifiers,
+               const std::vector<std::string>& stickyModifiers, bool down);
 void ToLower(std::string& s);
 
 }  // namespace driver
