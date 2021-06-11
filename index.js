@@ -314,5 +314,5 @@ exports.typeText = (text) => {
     return;
   }
 
-  return lib.typeText(text);
+  return lib.typeText(text, stickyModifiers);
 };

@@ -173,17 +173,17 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
 
   DWORD delay = 50;
   if (paragraph) {
-    PressKey("home", std::vector<std::string>{"shift"});
+    PressKey("home", std::vector<std::string>{"shift"}, std::vector<std::string>{});
     Sleep(delay);
-    PressKey("up", std::vector<std::string>{"control", "shift"});
+    PressKey("up", std::vector<std::string>{"control", "shift"}, std::vector<std::string>{});
   } else {
-    PressKey("home", std::vector<std::string>{"control", "shift"});
+    PressKey("home", std::vector<std::string>{"control", "shift"}, std::vector<std::string>{});
   }
 
   Sleep(delay);
-  PressKey("c", std::vector<std::string>{"control"});
+  PressKey("c", std::vector<std::string>{"control"}, std::vector<std::string>{});
   Sleep(delay);
-  PressKey("right", std::vector<std::string>{});
+  PressKey("right", std::vector<std::string>{}, std::vector<std::string>{});
   std::string left = GetClipboard();
   RemoveNonASCII(left);
 
@@ -193,17 +193,17 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
   }
 
   if (paragraph) {
-    PressKey("end", std::vector<std::string>{"shift"});
+    PressKey("end", std::vector<std::string>{"shift"}, std::vector<std::string>{});
     Sleep(delay);
-    PressKey("down", std::vector<std::string>{"control", "shift"});
+    PressKey("down", std::vector<std::string>{"control", "shift"}, std::vector<std::string>{});
   } else {
-    PressKey("end", std::vector<std::string>{"control", "shift"});
+    PressKey("end", std::vector<std::string>{"control", "shift"}, std::vector<std::string>{});
   }
 
   Sleep(delay);
-  PressKey("c", std::vector<std::string>{"control"});
+  PressKey("c", std::vector<std::string>{"control"}, std::vector<std::string>{});
   Sleep(delay);
-  PressKey("left", std::vector<std::string>{});
+  PressKey("left", std::vector<std::string>{}, std::vector<std::string>{});
   std::string right = GetClipboard();
   RemoveNonASCII(right);
 
@@ -369,19 +369,19 @@ void MouseUp(const std::string& button) {
   }
 }
 
-void PressKey(const std::string& key, std::vector<std::string> modifiers) {
+void PressKey(const std::string& key, const std::vector<std::string>& modifiers, const std::vector<std::string>& stickyModifiers) {
   for (std::string modifier : modifiers) {
-    ToggleKey(modifier, true);
+    ToggleKey(modifier, stickyModifiers, true);
   }
 
-  ToggleKey(key, true);
-  ToggleKey(key, false);
+  ToggleKey(key, stickyModifiers, true);
+  ToggleKey(key, stickyModifiers, false);
 
   for (std::string modifier : modifiers) {
-    ToggleKey(modifier, false);
+    ToggleKey(modifier, stickyModifiers, false);
   }
 
-  Sleep(2);
+  Sleep(5);
 }
 
 std::string ProcessName(HWND window) {
@@ -409,7 +409,7 @@ void RemoveNonASCII(std::string& s) {
 
 void SetMouseLocation(int x, int y) { SetCursorPos(x, y); }
 
-void ToggleKey(const std::string& key, bool down) {
+void ToggleKey(const std::string& key, const std::vector<std::string>& stickyModifiers, bool down) {
   // first, look for a hard-coded virtual key (e.g., for non-alphanumeric
   // characters)
   std::tuple<int, bool, bool, int> keycode = GetVirtualKeyAndModifiers(key);
@@ -417,11 +417,11 @@ void ToggleKey(const std::string& key, bool down) {
   bool altgr = std::get<2>(keycode);
 
   if (shift) {
-    ToggleKey("shift", true);
+    ToggleKey("shift", std::vector<std::string>{}, true);
   }
   if (altgr) {
-    ToggleKey("alt", true);
-    ToggleKey("control", true);
+    ToggleKey("alt", std::vector<std::string>{}, true);
+    ToggleKey("control", std::vector<std::string>{}, true);
   }
 
   INPUT event;
@@ -430,12 +430,16 @@ void ToggleKey(const std::string& key, bool down) {
   event.ki.dwFlags = (down ? 0 : KEYEVENTF_KEYUP) | std::get<3>(keycode);
   SendInput(1, &event, sizeof(INPUT));
 
-  if (shift) {
-    ToggleKey("shift", false);
+  if (shift && std::find(stickyModifiers.begin(), stickyModifiers.end(), "shift") == stickyModifiers.end()) {
+    ToggleKey("shift", std::vector<std::string>{}, false);
   }
   if (altgr) {
-    ToggleKey("control", false);
-    ToggleKey("alt", false);
+    if (std::find(stickyModifiers.begin(), stickyModifiers.end(), "control") == stickyModifiers.end()) {
+      ToggleKey("control", std::vector<std::string>{}, false);
+    }
+    if (std::find(stickyModifiers.begin(), stickyModifiers.end(), "alt") == stickyModifiers.end()) {
+      ToggleKey("alt", std::vector<std::string>{}, false);
+    }
   }
 }
 }  // namespace driver

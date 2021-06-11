@@ -311,7 +311,7 @@ Napi::Promise ToggleKey(const Napi::CallbackInfo& info, bool down) {
 #endif
 
 #ifdef _WIN32
-  driver::ToggleKey(display, info[0].As<Napi::String>().Utf8Value(), down);
+  driver::ToggleKey(info[0].As<Napi::String>().Utf8Value(), stickyModifiers, down);
 #endif
 
   deferred.Resolve(env.Undefined());
@@ -330,6 +330,8 @@ Napi::Promise TypeText(const Napi::CallbackInfo& info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
   std::string text = info[0].As<Napi::String>().Utf8Value();
+  std::vector<std::string> stickyModifiers;
+  ToStringVector(info[1].As<Napi::Array>(), stickyModifiers);
 
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
@@ -341,10 +343,10 @@ Napi::Promise TypeText(const Napi::CallbackInfo& info) {
 #endif
 #ifdef __APPLE__
     AUTORELEASE(driver::PressKey(std::string(1, c), std::vector<std::string>{},
-                                 std::vector<std::string>{}));
+                                 stickyModifiers));
 #endif
 #ifdef _WIN32
-    driver::PressKey(std::string(1, c), std::vector<std::string>{});
+    driver::PressKey(std::string(1, c), std::vector<std::string>{}, stickyModifiers);
 #endif
   }
 

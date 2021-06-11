@@ -21,10 +21,10 @@ std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(
 void InitializeUIAutomation();
 void MouseDown(const std::string& button);
 void MouseUp(const std::string& button);
-void PressKey(const std::string& key, std::vector<std::string> modifiers);
+void PressKey(const std::string& key, const std::vector<std::string>& modifiers, const std::vector<std::string>& stickyModifiers);
 std::string ProcessName(HWND window);
 void RemoveNonASCII(std::string& s);
 void SetMouseLocation(int x, int y);
-void ToggleKey(const std::string& key, bool down);
+void ToggleKey(const std::string& key, const std::vector<std::string>& stickyModifiers, bool down);
 
 }  // namespace driver
