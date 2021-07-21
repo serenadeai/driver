@@ -114,14 +114,16 @@ exports.getInstalledApplications = async () => {
 
     return new Promise(async (resolve) => {
       fs.readdir(root, { withFileTypes: true }, async (error, files) => {
-        for (let e of files) {
-          const file = path.join(root, e.name);
-          if (os.platform() == "darwin" && file.endsWith(".app")) {
-            result.push(file);
-          } else if (os.platform() == "win32" && file.endsWith(".lnk")) {
-            result.push(file);
-          } else if (e.isDirectory()) {
-            result = result.concat(await search(file, depth + 1, max));
+        if (!error && files && files.length) {
+          for (let e of files) {
+            const file = path.join(root, e.name);
+            if (os.platform() == "darwin" && file.endsWith(".app")) {
+              result.push(file);
+            } else if (os.platform() == "win32" && file.endsWith(".lnk")) {
+              result.push(file);
+            } else if (e.isDirectory()) {
+              result = result.concat(await search(file, depth + 1, max));
+            }
           }
         }
 
