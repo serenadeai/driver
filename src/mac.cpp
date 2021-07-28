@@ -275,14 +275,14 @@ void FocusApplication(const std::string& application) {
         [NSRunningApplication runningApplicationWithProcessIdentifier:[pid intValue]];
 
     if (app.bundleURL != NULL) {
-      if ([app.bundleURL.path.lowercaseString containsString:name]) {
+      NSString* appName = [app.bundleURL.path.lowercaseString stringByReplacingOccurrencesOfString:@" " withString:@""];
+      if ([appName containsString:name]) {
         [app unhide];
         [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
         break;
       }
     }
   }
-
   CFRelease(windows);
 }
 
