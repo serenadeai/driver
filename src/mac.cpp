@@ -264,7 +264,7 @@ void FocusApplication(const std::string& application) {
 
   NSMutableSet* pids = [[NSMutableSet alloc] init];
   NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-      kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
 
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
