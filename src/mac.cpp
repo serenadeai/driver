@@ -342,6 +342,28 @@ bool ActiveApplicationIsSandboxed() {
   return isSandboxed;
 }
 
+std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
+  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
+    kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  std::tuple<int, int, int, int> result;
+  if (windows != NULL) {
+    for (NSDictionary* window in windows) {
+      int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
+      float alpha = [[window objectForKey:@"kCGWindowAlpha"] floatValue];
+      if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active && alpha > 0) {
+        NSDictionary* bounds = [window objectForKey:@"kCGWindowBounds"];
+        std::get<0>(result) = [[bounds objectForKey:@"X"] intValue];
+        std::get<1>(result) = [[bounds objectForKey:@"Y"] intValue];
+        std::get<2>(result) = [[bounds objectForKey:@"Height"] intValue];
+        std::get<3>(result) = [[bounds objectForKey:@"Width"] intValue];
+        CFRelease(windows);
+        return result;
+      }
+    }
+  }
+  return result;
+}
+
 int GetActivePid() {
   NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
       kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);

@@ -1,4 +1,5 @@
 const child_process = require("child_process");
+const exp = require("constants");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -61,7 +62,10 @@ exports.focusApplication = async (application, aliases) => {
   application = normalizeApplication(application);
 
   // if we have an exact match without any aliasing, then prioritize that
-  if (applicationMatches(application, await exports.getRunningApplications(), {}).length > 0) {
+  if (
+    applicationMatches(application, await exports.getRunningApplications(), {})
+      .length > 0
+  ) {
     return lib.focusApplication(application);
   }
 
@@ -91,6 +95,10 @@ exports.focusOrLaunchApplication = async (application, aliases) => {
 
 exports.getActiveApplication = () => {
   return lib.getActiveApplication();
+};
+
+exports.getActiveApplicationWindowBounds = () => {
+  return lib.getActiveApplicationWindowBounds();
 };
 
 exports.getClickableButtons = () => {
@@ -141,12 +149,24 @@ exports.getInstalledApplications = async () => {
     return (await search(path.join(os.homedir(), "Desktop"), 0, max))
       .concat(
         await search(
-          path.join(process.env.APPDATA, "Microsoft", "Windows", "Start Menu", "Programs"),
+          path.join(
+            process.env.APPDATA,
+            "Microsoft",
+            "Windows",
+            "Start Menu",
+            "Programs"
+          ),
           0,
           max
         )
       )
-      .concat(await search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max));
+      .concat(
+        await search(
+          "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs",
+          0,
+          max
+        )
+      );
   }
 
   return Promise.resolve([]);
@@ -243,7 +263,11 @@ exports.quitApplication = async (application, aliases) => {
   }
 
   if (
-    applicationMatches(application, await exports.getRunningApplications(), aliases).length == 0
+    applicationMatches(
+      application,
+      await exports.getRunningApplications(),
+      aliases
+    ).length == 0
   ) {
     return;
   }

@@ -1,4 +1,5 @@
 #include <napi.h>
+#include <iostream>
 
 #include <tuple>
 #include <vector>
@@ -93,6 +94,30 @@ Napi::Promise GetActiveApplication(const Napi::CallbackInfo& info) {
   AUTORELEASE(ret = driver::GetActiveApplication());
 
   deferred.Resolve(Napi::String::New(env, ret));
+  return deferred.Promise();
+}
+
+Napi::Promise GetActiveApplicationWindowBounds(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
+
+#ifdef __APPLE__
+  std::tuple<int, int, int, int> bounds;
+  AUTORELEASE(bounds = driver::GetActiveApplicationWindowBounds());
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("x", std::get<0>(bounds));
+  result.Set("y", std::get<1>(bounds));
+  result.Set("height", std::get<2>(bounds));
+  result.Set("width", std::get<3>(bounds));
+  deferred.Resolve(result);
+#else
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("x", 0);
+  result.Set("y", 0);
+  result.Set("height", -1);
+  result.Set("width", -1);
+  deferred.Resolve(result);
+#endif
   return deferred.Promise();
 }
 
@@ -323,6 +348,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, FocusApplication));
   exports.Set(Napi::String::New(env, "getActiveApplication"),
               Napi::Function::New(env, GetActiveApplication));
+  exports.Set(Napi::String::New(env, "getActiveApplicationWindowBounds"),
+              Napi::Function::New(env, GetActiveApplicationWindowBounds));
   exports.Set(Napi::String::New(env, "getClickableButtons"),
               Napi::Function::New(env, GetClickableButtons));
   exports.Set(Napi::String::New(env, "getEditorState"), Napi::Function::New(env, GetEditorState));
