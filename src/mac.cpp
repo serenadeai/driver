@@ -344,7 +344,7 @@ bool ActiveApplicationIsSandboxed() {
 
 int GetActivePid() {
   NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-      kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
   // CGWindowListCopyWindowInfo can return NULL if there is no window server running or if we
   // are outside of a GUI security session (can happen during update + restart)
   if (windows != NULL) {
@@ -596,7 +596,7 @@ std::vector<std::string> GetRunningApplications() {
   std::vector<std::string> result;
   NSMutableSet* pids = [[NSMutableSet alloc] init];
   NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-      kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
 
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
