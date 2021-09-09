@@ -72,6 +72,18 @@ std::string GetActiveApplication() {
   return ProcessName(GetForegroundWindow());
 }
 
+std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
+  RECT* rect;
+  std::tuple<int, int, int, int> result;
+  if (GetWindowRect(GetForegroundWindow(), rect) {
+    std::get<0>(result) = rect.left;
+    std::get<1>(result) = rect.top;
+    std::get<2>(result) = rect.top - rect.bottom;
+    std::get<3>(result) = rect.right - rect.left;
+  }
+  return result;
+}
+
 std::string GetClipboard() {
   if (!OpenClipboard(NULL)) {
     return "";
