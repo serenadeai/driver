@@ -1,5 +1,4 @@
 const child_process = require("child_process");
-const exp = require("constants");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
