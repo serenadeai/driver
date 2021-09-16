@@ -365,6 +365,7 @@ std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
         return result;
       }
     }
+    CFRelease(windows);
   }
   return result;
 }
