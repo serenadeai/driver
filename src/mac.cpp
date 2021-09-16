@@ -257,14 +257,19 @@ void Describe(AXUIElementRef element) {
   std::cout << std::endl;
 }
 
+NSArray* GetWindows() {
+  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
+    kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  return windows;
+}
+
 void FocusApplication(const std::string& application) {
   NSString* name = [NSString stringWithCString:application.c_str()
                                       encoding:[NSString defaultCStringEncoding]]
                        .lowercaseString;
 
   NSMutableSet* pids = [[NSMutableSet alloc] init];
-  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  NSArray* windows = GetWindows();
 
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
@@ -343,14 +348,14 @@ bool ActiveApplicationIsSandboxed() {
 }
 
 std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
-  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-    kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  NSArray* windows = GetWindows();
   std::tuple<int, int, int, int> result;
   if (windows != NULL) {
     for (NSDictionary* window in windows) {
       int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
       float alpha = [[window objectForKey:@"kCGWindowAlpha"] floatValue];
-      if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active && alpha > 0) {
+      bool onscreen = [window objectForKey:@"kCGWindowIsOnscreen"];
+      if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active && alpha > 0 && onscreen) {
         NSDictionary* bounds = [window objectForKey:@"kCGWindowBounds"];
         std::get<0>(result) = [[bounds objectForKey:@"X"] intValue];
         std::get<1>(result) = [[bounds objectForKey:@"Y"] intValue];
@@ -365,9 +370,8 @@ std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
 }
 
 int GetActivePid() {
-  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
-  // CGWindowListCopyWindowInfo can return NULL if there is no window server running or if we
+  NSArray* windows = GetWindows();
+  // GetWindows can return NULL if there is no window server running or if we
   // are outside of a GUI security session (can happen during update + restart)
   if (windows != NULL) {
     for (NSDictionary* window in windows) {
@@ -617,8 +621,7 @@ std::string GetRawTitle(AXUIElementRef element) {
 std::vector<std::string> GetRunningApplications() {
   std::vector<std::string> result;
   NSMutableSet* pids = [[NSMutableSet alloc] init];
-  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  NSArray* windows = GetWindows();
 
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];

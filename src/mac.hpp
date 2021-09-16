@@ -40,6 +40,7 @@ std::vector<std::string> GetRunningApplications();
 std::string GetTitle(AXUIElementRef element);
 std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(
     const std::string& key);
+NSArray* GetWindows();
 bool HasActionName(AXUIElementRef element, CFStringRef name);
 bool IsButton(AXUIElementRef element);
 void MouseDown(const std::string& button);
