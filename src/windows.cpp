@@ -73,12 +73,12 @@ std::string GetActiveApplication() {
 }
 
 std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
-  RECT* rect;
+  RECT rect;
   std::tuple<int, int, int, int> result;
-  if (GetWindowRect(GetForegroundWindow(), rect) {
+  if (GetWindowRect(GetForegroundWindow(), &rect)) {
     std::get<0>(result) = rect.left;
     std::get<1>(result) = rect.top;
-    std::get<2>(result) = rect.top - rect.bottom;
+    std::get<2>(result) = rect.bottom - rect.top;
     std::get<3>(result) = rect.right - rect.left;
   }
   return result;
