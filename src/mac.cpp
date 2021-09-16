@@ -269,7 +269,12 @@ void FocusApplication(const std::string& application) {
                        .lowercaseString;
 
   NSMutableSet* pids = [[NSMutableSet alloc] init];
+<<<<<<< HEAD
   NSArray* windows = GetWindows();
+=======
+  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+>>>>>>> 98c2a1146fab65b8b56631c21c21693c270a59d6
 
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
@@ -371,8 +376,14 @@ std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
 }
 
 int GetActivePid() {
+<<<<<<< HEAD
   NSArray* windows = GetWindows();
   // GetWindows can return NULL if there is no window server running or if we
+=======
+  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  // CGWindowListCopyWindowInfo can return NULL if there is no window server running or if we
+>>>>>>> 98c2a1146fab65b8b56631c21c21693c270a59d6
   // are outside of a GUI security session (can happen during update + restart)
   if (windows != NULL) {
     for (NSDictionary* window in windows) {
@@ -622,7 +633,12 @@ std::string GetRawTitle(AXUIElementRef element) {
 std::vector<std::string> GetRunningApplications() {
   std::vector<std::string> result;
   NSMutableSet* pids = [[NSMutableSet alloc] init];
+<<<<<<< HEAD
   NSArray* windows = GetWindows();
+=======
+  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+>>>>>>> 98c2a1146fab65b8b56631c21c21693c270a59d6
 
   for (NSDictionary* window in windows) {
     [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
