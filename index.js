@@ -93,6 +93,10 @@ exports.getActiveApplication = () => {
   return lib.getActiveApplication();
 };
 
+exports.getActiveApplicationWindowBounds = () => {
+  return lib.getActiveApplicationWindowBounds();
+};
+
 exports.getClickableButtons = () => {
   return lib.getClickableButtons();
 };
@@ -146,7 +150,8 @@ exports.getInstalledApplications = async () => {
           max
         )
       )
-      .concat(await search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max));
+      .concat(await search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max)
+      );
   }
 
   return Promise.resolve([]);

@@ -6,6 +6,7 @@ Napi::Promise Click(const Napi::CallbackInfo& info);
 Napi::Promise ClickButton(const Napi::CallbackInfo& info);
 Napi::Promise FocusApplication(const Napi::CallbackInfo& info);
 Napi::Promise GetActiveApplication(const Napi::CallbackInfo& info);
+Napi::Promise GetActiveApplicationWindowBounds(const Napi::CallbackInfo& info);
 Napi::Promise GetClickableButtons(const Napi::CallbackInfo& info);
 Napi::Promise GetEditorState(const Napi::CallbackInfo& info);
 Napi::Promise GetEditorStateFallback(const Napi::CallbackInfo& info);

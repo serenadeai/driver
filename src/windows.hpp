@@ -10,6 +10,7 @@ void Click(const std::string& button, int count);
 void FocusApplication(const std::string& application);
 BOOL CALLBACK FocusWindow(HWND window, LPARAM data);
 std::string GetActiveApplication();
+std::tuple<int, int, int, int> GetActiveApplicationWindowBounds();
 std::string GetClipboard();
 std::tuple<std::string, int, bool> GetEditorState();
 std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph);
