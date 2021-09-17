@@ -79,13 +79,41 @@ std::string GetActiveApplication() {
   return result;
 }
 
+std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
+  Display* display = XOpenDisplay(NULL);
+  Window root = XDefaultRootWindow(display);
+  if (root == 0) {
+    return "";
+  }
+
+  unsigned long length = 0;
+  unsigned char* property = 0;
+  GetProperty(display, root, "_NET_ACTIVE_WINDOW", &property, &length);
+  if (property == 0) {
+    return "";
+  }
+
+  Window* window = (Window*)property;
+  XWindowAttributes windowAttributes;
+  XGetWindowAttributes(display, window, &windowAttributes);
+  std::tuple<int, int, int, int> result;
+  std::get<0>(result) = windowAttributes.x;
+  std::get<1>(result) = windowAttributes.y;
+  std::get<2>(result) = windowAttributes.height;
+  std::get<3>(result) = windowAttributes.width;
+
+  XFree(window);
+  XFree(windowAttributes);
+  XCloseDisplay(display);
+  return result;
+}
+
 std::vector<Window> GetAllWindows(Display* display) {
   std::vector<Window> result;
   Window root = XDefaultRootWindow(display);
   if (root == 0) {
     return result;
   }
-
   unsigned long length = 0;
   unsigned char* property = 0;
   GetProperty(display, root, "_NET_CLIENT_LIST", &property, &length);
