@@ -100,14 +100,6 @@ Napi::Promise GetActiveApplicationWindowBounds(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
 
-#ifdef __linux__
-  Napi::Object result = Napi::Object::New(env);
-  result.Set("x", 0);
-  result.Set("y", 0);
-  result.Set("height", -1);
-  result.Set("width", -1);
-  deferred.Resolve(result);
-#else
   std::tuple<int, int, int, int> bounds;
   AUTORELEASE(bounds = driver::GetActiveApplicationWindowBounds());
   Napi::Object result = Napi::Object::New(env);
@@ -116,7 +108,6 @@ Napi::Promise GetActiveApplicationWindowBounds(const Napi::CallbackInfo& info) {
   result.Set("height", std::get<2>(bounds));
   result.Set("width", std::get<3>(bounds));
   deferred.Resolve(result);
-#endif
   return deferred.Promise();
 }
 

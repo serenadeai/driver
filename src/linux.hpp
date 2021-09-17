@@ -10,6 +10,7 @@ namespace driver {
 void Click(Display* display, const std::string& button, int count);
 void FocusApplication(const std::string& application);
 std::string GetActiveApplication();
+std::tuple<int, int, int, int> GetActiveApplicationWindowBounds();
 std::vector<Window> GetAllWindows(Display* display);
 std::string GetClipboard(Display* display, Window window);
 std::tuple<std::string, int, bool> GetEditorState(Display* display);
