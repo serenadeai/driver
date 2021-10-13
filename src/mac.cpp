@@ -19,6 +19,7 @@ void Click(const std::string& button, int count) {
   CGMouseButton mouseButton = button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight;
 
   std::tuple<int, int> location = GetMouseLocation();
+  std::cout << std::get<0>(location) << "," << std::get<1>(location) << std::endl;
   CGEventRef event = CGEventCreateMouseEvent(
       NULL, downEventType, CGPointMake(std::get<0>(location), std::get<1>(location)), mouseButton);
   CGEventPost(kCGHIDEventTap, event);
@@ -559,20 +560,7 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
 std::tuple<int, int> GetMouseLocation() {
   std::tuple<int, int> result;
   std::get<0>(result) = NSEvent.mouseLocation.x;
-
-  NSScreen* smallestScreen = NSScreen.mainScreen;
-  NSEnumerator* screens = [NSScreen.screens objectEnumerator];
-  NSScreen* screen;
-  while ((screen = screens.nextObject)) {
-    if (screen.frame.size.height <= smallestScreen.frame.size.height) {
-      smallestScreen = screen;
-    }
-  };
-  CGFloat y = NSEvent.mouseLocation.y;
-  if (smallestScreen != nil) {
-    y = smallestScreen.frame.size.height - y;
-  }
-  std::get<1>(result) = y;
+  std::get<1>(result) = NSScreen.mainScreen.frame.size.height - NSEvent.mouseLocation.y;
   return result;
 }
 
