@@ -19,7 +19,6 @@ void Click(const std::string& button, int count) {
   CGMouseButton mouseButton = button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight;
 
   std::tuple<int, int> location = GetMouseLocation();
-  std::cout << std::get<0>(location) << "," << std::get<1>(location) << std::endl;
   CGEventRef event = CGEventCreateMouseEvent(
       NULL, downEventType, CGPointMake(std::get<0>(location), std::get<1>(location)), mouseButton);
   CGEventPost(kCGHIDEventTap, event);
