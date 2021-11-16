@@ -11,8 +11,7 @@
 #define kAXEnhancedUserInterfaceAttribute CFSTR("AXEnhancedUserInterface")
 #define kAXManualAccessibilityAttribute CFSTR("AXManualAccessibility")
 
-namespace driver
-{
+namespace driver {
 
 bool ActiveApplicationIsSandboxed();
 void Click(const std::string& button, int count);
@@ -25,6 +24,7 @@ void Describe(AXUIElementRef element);
 void FocusApplication(const std::string& application);
 std::string GetActiveApplication();
 int GetActivePid();
+std::vector<int> GetVisiblePids();
 std::tuple<int, int, int, int> GetActiveApplicationWindowBounds();
 void GetClickableButtons(AXUIElementRef element,
                          std::vector<std::string>& result);
@@ -40,7 +40,6 @@ std::vector<std::string> GetRunningApplications();
 std::string GetTitle(AXUIElementRef element);
 std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(
     const std::string& key);
-NSArray* GetWindows();
 bool HasActionName(AXUIElementRef element, CFStringRef name);
 bool IsButton(AXUIElementRef element);
 void MouseDown(const std::string& button);
@@ -53,4 +52,4 @@ void ToggleKey(const std::string& key,
                const std::vector<std::string>& modifiers, bool down);
 void ToLower(std::string& s);
 
-} // namespace driver
+}  // namespace driver

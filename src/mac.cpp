@@ -257,10 +257,34 @@ void Describe(AXUIElementRef element) {
   std::cout << std::endl;
 }
 
-NSArray* GetWindows() {
+std::vector<int> GetVisiblePids() {
+  std::vector<int> result;
+
+  // this call can return NULL if there is no window server running or if we
+  // are outside of a GUI security session (can happen during update + restart)
   NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
-    kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
-  return windows;
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  if (windows == NULL) {
+    return result;
+  }
+
+  for (NSDictionary* window in windows) {
+    int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
+    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+    if (app != NULL && app.bundleURL != NULL) {
+      NSString* name = app.bundleURL.path.lowercaseString;
+      // filter out applications that appear to have windows, but are actually system services
+      if (![name hasSuffix:@".xpc"] && ![name hasSuffix:@".appex"] &&
+          ![name containsString:@"coreservices"] && ![name containsString:@"privateframeworks"] &&
+          ![name containsString:@".framework"] && ![name containsString:@"helper"] &&
+          std::find(result.begin(), result.end(), pid) == result.end()) {
+        result.push_back(pid);
+      }
+    }
+  }
+
+  CFRelease(windows);
+  return result;
 }
 
 void FocusApplication(const std::string& application) {
@@ -268,19 +292,13 @@ void FocusApplication(const std::string& application) {
                                       encoding:[NSString defaultCStringEncoding]]
                        .lowercaseString;
 
-  NSMutableSet* pids = [[NSMutableSet alloc] init];
-  NSArray* windows = GetWindows();
-
-  for (NSDictionary* window in windows) {
-    [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
-  }
-
-  for (NSNumber* pid in [pids allObjects]) {
-    NSRunningApplication* app =
-        [NSRunningApplication runningApplicationWithProcessIdentifier:[pid intValue]];
-
+  std::vector<int> pids = GetVisiblePids();
+  for (int pid : pids) {
+    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
     if (app.bundleURL != NULL) {
-      NSString* appName = [app.bundleURL.path.lowercaseString stringByReplacingOccurrencesOfString:@" " withString:@""];
+      NSString* appName =
+          [app.bundleURL.path.lowercaseString stringByReplacingOccurrencesOfString:@" "
+                                                                        withString:@""];
       if ([appName containsString:name]) {
         [app unhide];
         [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
@@ -288,7 +306,6 @@ void FocusApplication(const std::string& application) {
       }
     }
   }
-  CFRelease(windows);
 }
 
 std::string GetActiveApplication() {
@@ -348,41 +365,39 @@ bool ActiveApplicationIsSandboxed() {
 }
 
 std::tuple<int, int, int, int> GetActiveApplicationWindowBounds() {
-  NSArray* windows = GetWindows();
   std::tuple<int, int, int, int> result;
-  if (windows != NULL) {
-    for (NSDictionary* window in windows) {
-      int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
-      float alpha = [[window objectForKey:@"kCGWindowAlpha"] floatValue];
-      bool onscreen = [window objectForKey:@"kCGWindowIsOnscreen"];
-      if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active && alpha > 0 && onscreen) {
-        NSDictionary* bounds = [window objectForKey:@"kCGWindowBounds"];
-        std::get<0>(result) = [[bounds objectForKey:@"X"] intValue];
-        std::get<1>(result) = [[bounds objectForKey:@"Y"] intValue];
-        std::get<2>(result) = [[bounds objectForKey:@"Height"] intValue];
-        std::get<3>(result) = [[bounds objectForKey:@"Width"] intValue];
-        CFRelease(windows);
-        return result;
-      }
-    }
-    CFRelease(windows);
+  NSArray* windows = (NSArray*)CGWindowListCopyWindowInfo(
+      kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
+  if (windows == NULL) {
+    return result;
   }
+
+  for (NSDictionary* window in windows) {
+    int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
+    float alpha = [[window objectForKey:@"kCGWindowAlpha"] floatValue];
+    bool onscreen = [window objectForKey:@"kCGWindowIsOnscreen"];
+    if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active && alpha > 0 &&
+        onscreen) {
+      NSDictionary* bounds = [window objectForKey:@"kCGWindowBounds"];
+      std::get<0>(result) = [[bounds objectForKey:@"X"] intValue];
+      std::get<1>(result) = [[bounds objectForKey:@"Y"] intValue];
+      std::get<2>(result) = [[bounds objectForKey:@"Height"] intValue];
+      std::get<3>(result) = [[bounds objectForKey:@"Width"] intValue];
+      CFRelease(windows);
+      return result;
+    }
+  }
+
+  CFRelease(windows);
   return result;
 }
 
 int GetActivePid() {
-  NSArray* windows = GetWindows();
-  // GetWindows can return NULL if there is no window server running or if we
-  // are outside of a GUI security session (can happen during update + restart)
-  if (windows != NULL) {
-    for (NSDictionary* window in windows) {
-      int pid = [[window objectForKey:@"kCGWindowOwnerPID"] intValue];
-      if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active) {
-        CFRelease(windows);
-        return pid;
-      }
+  std::vector<int> pids = GetVisiblePids();
+  for (int pid : pids) {
+    if ([NSRunningApplication runningApplicationWithProcessIdentifier:pid].active) {
+      return pid;
     }
-    CFRelease(windows);
   }
 
   NSRunningApplication* running = [NSWorkspace sharedWorkspace].frontmostApplication;
@@ -474,7 +489,8 @@ std::tuple<std::string, int, bool> GetEditorState() {
       int newLineCount = 0;
       for (CFIndex i = 0; (i < range.location + newLineCount) && (i < (int)narrow.size()); i++) {
         if (narrow[i] == '\n') {
-          // Double newlines update the range.location property correctly, so avoid double counting
+          // Double newlines update the range.location property correctly, so avoid double
+          // counting
           if (i > 0 && narrow[i - 1] != '\n') {
             newLineCount++;
           }
@@ -608,22 +624,19 @@ std::string GetRawTitle(AXUIElementRef element) {
 
 std::vector<std::string> GetRunningApplications() {
   std::vector<std::string> result;
-  NSMutableSet* pids = [[NSMutableSet alloc] init];
-  NSArray* windows = GetWindows();
+  std::vector<int> pids = GetVisiblePids();
+  NSMutableSet* seen = [[NSMutableSet alloc] init];
+  for (int pid : pids) {
+    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+    if (app != NULL && app.bundleURL != NULL) {
+      NSString* name =
+          [app.bundleURL.path.lowercaseString stringByReplacingOccurrencesOfString:@" "
+                                                                        withString:@""];
 
-  for (NSDictionary* window in windows) {
-    [pids addObject:[window objectForKey:@"kCGWindowOwnerPID"]];
-  }
-  CFRelease(windows);
-
-  for (NSNumber* pid in [pids allObjects]) {
-    NSRunningApplication* app =
-        [NSRunningApplication runningApplicationWithProcessIdentifier:[pid intValue]];
-
-    if (app != NULL && ![app.bundleURL.path.lowercaseString hasSuffix:@".xpc"]) {
-      result.push_back([[app.bundleURL.path.lowercaseString
-          stringByReplacingOccurrencesOfString:@" "
-                                    withString:@""] UTF8String]);
+      if (![seen containsObject:name]) {
+        [seen addObject:name];
+        result.push_back([name UTF8String]);
+      }
     }
   }
 
