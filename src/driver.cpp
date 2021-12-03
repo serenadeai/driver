@@ -265,7 +265,6 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
   for (int i = 0; i < count; i++) {
 #ifdef __linux__
     driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(), modifiers);
-    usleep(100000);
 #else
     AUTORELEASE(driver::PressKey(info[0].As<Napi::String>().Utf8Value(), modifiers));
 #endif
