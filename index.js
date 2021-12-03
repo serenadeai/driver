@@ -105,10 +105,6 @@ exports.getEditorState = () => {
   return lib.getEditorState();
 };
 
-exports.getEditorStateFallback = (paragraph) => {
-  return lib.getEditorStateFallback(!!paragraph);
-};
-
 exports.getInstalledApplications = async () => {
   const search = async (root, depth, max) => {
     let result = [];
@@ -150,8 +146,7 @@ exports.getInstalledApplications = async () => {
           max
         )
       )
-      .concat(await search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max)
-      );
+      .concat(await search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max));
   }
 
   return Promise.resolve([]);

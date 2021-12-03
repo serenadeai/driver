@@ -14,8 +14,6 @@ std::tuple<int, int, int, int> GetActiveApplicationWindowBounds();
 std::vector<Window> GetAllWindows(Display* display);
 std::string GetClipboard(Display* display, Window window);
 std::tuple<std::string, int, bool> GetEditorState(Display* display);
-std::tuple<std::string, int, bool> GetEditorStateFallback(Display* display,
-                                                          bool paragraph);
 std::tuple<int, bool, bool> GetKeycodeAndModifiers(Display* display,
                                                    const std::string& key);
 std::tuple<int, int> GetMouseLocation();

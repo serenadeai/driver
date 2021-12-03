@@ -13,7 +13,6 @@ std::string GetActiveApplication();
 std::tuple<int, int, int, int> GetActiveApplicationWindowBounds();
 std::string GetClipboard();
 std::tuple<std::string, int, bool> GetEditorState();
-std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph);
 std::tuple<int, int> GetMouseLocation();
 std::vector<std::string> GetRunningApplications();
 BOOL CALLBACK GetRunningWindows(HWND window, LPARAM data);

@@ -13,8 +13,8 @@
 #include <tuple>
 #include <vector>
 
-#include "windows.hpp"
 #include "util.hpp"
+#include "windows.hpp"
 
 namespace driver {
 
@@ -177,56 +177,6 @@ std::tuple<std::string, int, bool> GetEditorState() {
   std::get<2>(result) = false;
 
   SysFreeString(value);
-  return result;
-}
-
-std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
-  std::tuple<std::string, int, bool> result;
-
-  DWORD delay = 50;
-  if (paragraph) {
-    PressKey("home", std::vector<std::string>{"shift"});
-    Sleep(delay);
-    PressKey("up", std::vector<std::string>{"control", "shift"});
-  } else {
-    PressKey("home", std::vector<std::string>{"control", "shift"});
-  }
-
-  Sleep(delay);
-  PressKey("c", std::vector<std::string>{"control"});
-  Sleep(delay);
-  PressKey("right", std::vector<std::string>{});
-  std::string left = GetClipboard();
-  RemoveNonASCII(left);
-
-  // when copying left, the preceding newline is included
-  if (left.length() > 0 && left[0] == '\n') {
-    left = left.substr(1);
-  }
-
-  if (paragraph) {
-    PressKey("end", std::vector<std::string>{"shift"});
-    Sleep(delay);
-    PressKey("down", std::vector<std::string>{"control", "shift"});
-  } else {
-    PressKey("end", std::vector<std::string>{"control", "shift"});
-  }
-
-  Sleep(delay);
-  PressKey("c", std::vector<std::string>{"control"});
-  Sleep(delay);
-  PressKey("left", std::vector<std::string>{});
-  std::string right = GetClipboard();
-  RemoveNonASCII(right);
-
-  // when copying right, an extra space is included
-  if (right.length() > 0 && right[right.length() - 1] == ' ') {
-    right = right.substr(0, right.length() - 1);
-  }
-
-  std::get<0>(result) = left + right;
-  std::get<1>(result) = left.length();
-  std::get<2>(result) = false;
   return result;
 }
 

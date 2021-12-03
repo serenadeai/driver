@@ -514,64 +514,6 @@ std::tuple<std::string, int, bool> GetEditorState() {
   return result;
 }
 
-std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
-  long delay = 30000;
-  std::tuple<std::string, int, bool> result;
-  std::get<2>(result) = true;
-
-  NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
-  [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
-  NSString* previous = @"";
-  if (pasteboard.pasteboardItems.count > 0) {
-    previous = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-  }
-
-  if (paragraph) {
-    PressKey("up", std::vector<std::string>{"option", "shift"});
-    usleep(delay);
-  } else {
-    PressKey("left", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-    PressKey("up", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-  }
-
-  PressKey("c", std::vector<std::string>{"command"});
-  usleep(delay);
-  PressKey("right", std::vector<std::string>{});
-  usleep(delay);
-
-  if (pasteboard.pasteboardItems.count == 0) {
-    return result;
-  }
-  NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-
-  if (paragraph) {
-    PressKey("down", std::vector<std::string>{"option", "shift"});
-    usleep(delay);
-  } else {
-    PressKey("right", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-    PressKey("down", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-  }
-
-  PressKey("c", std::vector<std::string>{"command"});
-  usleep(delay);
-  PressKey("left", std::vector<std::string>{});
-
-  if (pasteboard.pasteboardItems.count == 0) {
-    return result;
-  }
-  NSString* right = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-
-  [pasteboard setString:previous forType:NSPasteboardTypeString];
-  std::get<0>(result) = [[NSString stringWithFormat:@"%@%@", left, right] UTF8String];
-  std::get<1>(result) = left.length;
-  std::get<2>(result) = false;
-  return result;
-}
-
 std::tuple<int, int> GetMouseLocation() {
   std::tuple<int, int> result;
   std::get<0>(result) = NSEvent.mouseLocation.x;
