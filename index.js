@@ -5,6 +5,16 @@ const path = require("path");
 const shortcut = require("windows-shortcuts");
 const lib = require("bindings")("serenade-driver.node");
 
+const defaultKeyDelay = () => {
+  if (os.platform() == "darwin") {
+    return 8;
+  } else if (os.platform() == "win32") {
+    return 2;
+  }
+
+  return 3;
+};
+
 const applicationMatches = (application, possible, aliases) => {
   let alias = application;
   if (aliases && aliases[application]) {
@@ -221,9 +231,13 @@ exports.mouseUp = (button) => {
   return lib.mouseUp(button);
 };
 
-exports.pressKey = (key, modifiers, count) => {
+exports.pressKey = (key, modifiers, count, delay) => {
   if (!modifiers) {
     modifiers = [];
+  }
+
+  if (delay === undefined) {
+    delay = defaultKeyDelay();
   }
 
   if (count === undefined || count === false) {
@@ -234,7 +248,7 @@ exports.pressKey = (key, modifiers, count) => {
     return;
   }
 
-  return lib.pressKey(key, modifiers, count);
+  return lib.pressKey(key, modifiers, count, delay);
 };
 
 exports.quitApplication = async (application, aliases) => {
@@ -296,10 +310,14 @@ exports.setMouseLocation = (x, y) => {
   return lib.setMouseLocation(x, y);
 };
 
-exports.typeText = (text) => {
+exports.typeText = (text, delay) => {
   if (!text) {
     return;
   }
 
-  return lib.typeText(text);
+  if (delay === undefined) {
+    delay = defaultKeyDelay();
+  }
+
+  return lib.typeText(text, delay);
 };

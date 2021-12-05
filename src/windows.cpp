@@ -331,7 +331,8 @@ void MouseUp(const std::string& button) {
   }
 }
 
-void PressKey(const std::string& key, std::vector<std::string> modifiers) {
+void PressKey(const std::string& key, std::vector<std::string> modifiers,
+              int delay) {
   for (std::string modifier : modifiers) {
     ToggleKey(modifier, true);
   }
@@ -343,7 +344,7 @@ void PressKey(const std::string& key, std::vector<std::string> modifiers) {
     ToggleKey(modifier, false);
   }
 
-  Sleep(2);
+  Sleep(delay);
 }
 
 std::string ProcessName(HWND window) {

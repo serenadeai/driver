@@ -223,6 +223,8 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
 
   Napi::Array modifierArray = info[1].As<Napi::Array>();
   int count = info[2].As<Napi::Number>().Int32Value();
+  int delay = info[3].As<Napi::Number>().Int32Value();
+
   if (count < 1) {
     deferred.Resolve(env.Undefined());
     return deferred.Promise();
@@ -240,9 +242,9 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
 
   for (int i = 0; i < count; i++) {
 #ifdef __linux__
-    driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(), modifiers);
+    driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(), modifiers, delay);
 #else
-    AUTORELEASE(driver::PressKey(info[0].As<Napi::String>().Utf8Value(), modifiers));
+    AUTORELEASE(driver::PressKey(info[0].As<Napi::String>().Utf8Value(), modifiers, delay));
 #endif
   }
 
@@ -285,6 +287,7 @@ Napi::Promise TypeText(const Napi::CallbackInfo& info) {
 
   std::vector<std::string> modifiers;
   std::string text = info[0].As<Napi::String>().Utf8Value();
+  int delay = info[1].As<Napi::Number>().Int32Value();
 
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
@@ -292,9 +295,9 @@ Napi::Promise TypeText(const Napi::CallbackInfo& info) {
 
   for (char c : text) {
 #ifdef __linux__
-    driver::PressKey(display, std::string(1, c), modifiers);
+    driver::PressKey(display, std::string(1, c), modifiers, delay);
 #else
-    AUTORELEASE(driver::PressKey(std::string(1, c), modifiers));
+    AUTORELEASE(driver::PressKey(std::string(1, c), modifiers, delay));
 #endif
   }
 

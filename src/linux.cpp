@@ -425,7 +425,7 @@ void MouseUp(Display* display, const std::string& button) {
 }
 
 void PressKey(Display* display, std::string key,
-              std::vector<std::string> modifiers) {
+              std::vector<std::string> modifiers, int delay) {
   std::tuple<int, bool, bool> keycodeAndModifiers =
       GetKeycodeAndModifiers(display, key);
   int keycode = std::get<0>(keycodeAndModifiers);
@@ -461,7 +461,7 @@ void PressKey(Display* display, std::string key,
     ToggleKey(display, "shift", false);
   }
 
-  usleep(3000);
+  usleep(delay * 1000);
 }
 
 std::string ProcessName(Display* display, Window window) {

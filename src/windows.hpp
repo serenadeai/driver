@@ -21,7 +21,8 @@ std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(
 void InitializeUIAutomation();
 void MouseDown(const std::string& button);
 void MouseUp(const std::string& button);
-void PressKey(const std::string& key, std::vector<std::string> modifiers);
+void PressKey(const std::string& key, std::vector<std::string> modifiers,
+              int delay);
 std::string ProcessName(HWND window);
 void RemoveNonASCII(std::string& s);
 void SetMouseLocation(int x, int y);

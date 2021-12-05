@@ -23,7 +23,7 @@ std::vector<std::string> GetRunningApplications();
 void MouseDown(Display* display, const std::string& button);
 void MouseUp(Display* display, const std::string& button);
 void PressKey(Display* display, std::string key,
-              std::vector<std::string> modifiers);
+              std::vector<std::string> modifiers, int delay);
 std::string ProcessName(Display* display, Window window);
 void SetMouseLocation(int x, int y);
 void ToggleKey(Display* display, const std::string& key, bool down);

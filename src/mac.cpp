@@ -771,9 +771,9 @@ void MouseUp(const std::string& button) {
   CFRelease(event);
 }
 
-void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
-  ToggleKey(key, modifiers, true);
-  ToggleKey(key, modifiers, false);
+void PressKey(const std::string& key, const std::vector<std::string>& modifiers, int delay) {
+  ToggleKey(key, modifiers, true, delay);
+  ToggleKey(key, modifiers, false, delay);
 }
 
 void SetEditorState(const std::string& text, int cursor, int cursorEnd) {
@@ -818,7 +818,8 @@ void SetMouseLocation(int x, int y) {
   usleep(100000);
 }
 
-void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down) {
+void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down,
+               int delay) {
   std::vector<std::string> adjustedModifiers = modifiers;
   std::tuple<CGKeyCode, bool, bool> keycode = GetVirtualKeyAndModifiers(key);
   if (std::get<1>(keycode)) {
@@ -885,8 +886,7 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
   CFRelease(source);
   CFRelease(event);
 
-  // determined empirically by typing into a variety of applications
-  usleep(8000);
+  usleep(delay * 1000);
 }
 
 void ToLower(std::string& s) {
