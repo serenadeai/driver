@@ -220,69 +220,72 @@ std::tuple<int, bool, bool, int> GetVirtualKeyAndModifiers(
   std::tuple<int, bool, bool, int> result;
   std::get<0>(result) = -1;
 
-  if (key == "left") {
+  std::string lower = key;
+  ToLower(lower);
+  if (lower == "left") {
     std::get<0>(result) = VK_LEFT;
-  } else if (key == "right") {
+  } else if (lower == "right") {
     std::get<0>(result) = VK_RIGHT;
-  } else if (key == "up") {
+  } else if (lower == "up") {
     std::get<0>(result) = VK_UP;
-  } else if (key == "down") {
+  } else if (lower == "down") {
     std::get<0>(result) = VK_DOWN;
-  } else if (key == "control" || key == "ctrl" || key == "commandOrControl") {
+  } else if (lower == "control" || lower == "ctrl" ||
+             lower == "commandOrControl") {
     std::get<0>(result) = VK_CONTROL;
-  } else if (key == "alt" || key == "option") {
+  } else if (lower == "alt" || lower == "option") {
     std::get<0>(result) = VK_MENU;
-  } else if (key == "shift") {
+  } else if (lower == "shift") {
     std::get<0>(result) = VK_SHIFT;
-  } else if (key == "backspace") {
+  } else if (lower == "backspace") {
     std::get<0>(result) = VK_BACK;
-  } else if (key == "delete") {
+  } else if (lower == "delete") {
     std::get<0>(result) = VK_DELETE;
-  } else if (key == "tab" || key == "\t") {
+  } else if (lower == "tab" || key == "\t") {
     std::get<0>(result) = VK_TAB;
-  } else if (key == "space" || key == " ") {
+  } else if (lower == "space" || key == " ") {
     std::get<0>(result) = VK_SPACE;
-  } else if (key == "caps") {
+  } else if (lower == "caps") {
     std::get<0>(result) = VK_CAPITAL;
-  } else if (key == "meta" || key == "win" || key == "windows") {
+  } else if (lower == "meta" || lower == "win" || lower == "windows") {
     std::get<0>(result) = VK_LWIN;
-  } else if (key == "escape") {
+  } else if (lower == "escape") {
     std::get<0>(result) = VK_ESCAPE;
-  } else if (key == "enter" || key == "return" || key == "\n") {
+  } else if (lower == "enter" || lower == "return" || key == "\n") {
     std::get<0>(result) = VK_RETURN;
-  } else if (key == "pageup") {
+  } else if (lower == "pageup") {
     std::get<0>(result) = VK_PRIOR;
-  } else if (key == "pagedown") {
+  } else if (lower == "pagedown") {
     std::get<0>(result) = VK_NEXT;
-  } else if (key == "home") {
+  } else if (lower == "home") {
     std::get<0>(result) = VK_HOME;
     std::get<3>(result) = 1;
-  } else if (key == "end") {
+  } else if (lower == "end") {
     std::get<0>(result) = VK_END;
     std::get<3>(result) = 1;
-  } else if (key == "f1") {
+  } else if (lower == "f1") {
     std::get<0>(result) = VK_F1;
-  } else if (key == "f2") {
+  } else if (lower == "f2") {
     std::get<0>(result) = VK_F2;
-  } else if (key == "f3") {
+  } else if (lower == "f3") {
     std::get<0>(result) = VK_F3;
-  } else if (key == "f4") {
+  } else if (lower == "f4") {
     std::get<0>(result) = VK_F4;
-  } else if (key == "f5") {
+  } else if (lower == "f5") {
     std::get<0>(result) = VK_F5;
-  } else if (key == "f6") {
+  } else if (lower == "f6") {
     std::get<0>(result) = VK_F6;
-  } else if (key == "f7") {
+  } else if (lower == "f7") {
     std::get<0>(result) = VK_F7;
-  } else if (key == "f8") {
+  } else if (lower == "f8") {
     std::get<0>(result) = VK_F8;
-  } else if (key == "f9") {
+  } else if (lower == "f9") {
     std::get<0>(result) = VK_F9;
-  } else if (key == "f10") {
+  } else if (lower == "f10") {
     std::get<0>(result) = VK_F10;
-  } else if (key == "f11") {
+  } else if (lower == "f11") {
     std::get<0>(result) = VK_F11;
-  } else if (key == "f12") {
+  } else if (lower == "f12") {
     std::get<0>(result) = VK_F12;
   }
 
@@ -370,7 +373,9 @@ void RemoveNonASCII(std::string& s) {
   }
 }
 
-void SetMouseLocation(int x, int y) { SetCursorPos(x, y); }
+void SetMouseLocation(int x, int y) {
+  SetCursorPos(x, y);
+}
 
 void ToggleKey(const std::string& key, bool down) {
   // first, look for a hard-coded virtual key (e.g., for non-alphanumeric
