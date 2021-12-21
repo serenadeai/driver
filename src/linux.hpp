@@ -14,8 +14,6 @@ std::tuple<int, int, int, int> GetActiveApplicationWindowBounds();
 std::vector<Window> GetAllWindows(Display* display);
 std::string GetClipboard(Display* display, Window window);
 std::tuple<std::string, int, bool> GetEditorState(Display* display);
-std::tuple<std::string, int, bool> GetEditorStateFallback(Display* display,
-                                                          bool paragraph);
 std::tuple<int, bool, bool> GetKeycodeAndModifiers(Display* display,
                                                    const std::string& key);
 std::tuple<int, int> GetMouseLocation();
@@ -25,7 +23,7 @@ std::vector<std::string> GetRunningApplications();
 void MouseDown(Display* display, const std::string& button);
 void MouseUp(Display* display, const std::string& button);
 void PressKey(Display* display, std::string key,
-              std::vector<std::string> modifiers);
+              std::vector<std::string> modifiers, int delay);
 std::string ProcessName(Display* display, Window window);
 void SetMouseLocation(int x, int y);
 void ToggleKey(Display* display, const std::string& key, bool down);

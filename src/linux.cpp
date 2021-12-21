@@ -176,34 +176,6 @@ std::tuple<std::string, int, bool> GetEditorState(Display* display) {
   return result;
 }
 
-std::tuple<std::string, int, bool> GetEditorStateFallback(Display* display,
-                                                          bool paragraph) {
-  std::tuple<std::string, int, bool> result;
-
-  unsigned long color = BlackPixel(display, DefaultScreen(display));
-  Window window = XCreateSimpleWindow(display, DefaultRootWindow(display), 0, 0,
-                                      1, 1, 0, color, color);
-
-  PressKey(display, paragraph ? "up" : "home",
-           std::vector<std::string>{"control", "shift"});
-  PressKey(display, "c", std::vector<std::string>{"control"});
-  usleep(10000);
-  PressKey(display, "right", std::vector<std::string>{});
-  std::string left = GetClipboard(display, window);
-
-  PressKey(display, paragraph ? "down" : "end",
-           std::vector<std::string>{"control", "shift"});
-  PressKey(display, "c", std::vector<std::string>{"control"});
-  usleep(10000);
-  PressKey(display, "left", std::vector<std::string>{});
-  std::string right = GetClipboard(display, window);
-
-  std::get<0>(result) = left + right;
-  std::get<1>(result) = left.length();
-  std::get<2>(result) = false;
-  return result;
-}
-
 std::tuple<int, bool, bool> GetKeycodeAndModifiers(Display* display,
                                                    const std::string& key) {
   std::tuple<int, bool, bool> result;
@@ -453,7 +425,7 @@ void MouseUp(Display* display, const std::string& button) {
 }
 
 void PressKey(Display* display, std::string key,
-              std::vector<std::string> modifiers) {
+              std::vector<std::string> modifiers, int delay) {
   std::tuple<int, bool, bool> keycodeAndModifiers =
       GetKeycodeAndModifiers(display, key);
   int keycode = std::get<0>(keycodeAndModifiers);
@@ -489,7 +461,7 @@ void PressKey(Display* display, std::string key,
     ToggleKey(display, "shift", false);
   }
 
-  usleep(3000);
+  usleep(delay * 1000);
 }
 
 std::string ProcessName(Display* display, Window window) {

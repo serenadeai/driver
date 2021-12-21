@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "mac.hpp"
+#include "util.hpp"
 
 namespace driver {
 
@@ -273,7 +274,8 @@ std::vector<int> GetVisiblePids() {
     NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
     if (app != NULL && app.bundleURL != NULL) {
       NSString* name = app.bundleURL.path.lowercaseString;
-      // filter out applications that appear to have windows, but are actually system services
+      // filter out applications that appear to have windows, but are actually
+      // system services
       if (![name hasSuffix:@".xpc"] && ![name hasSuffix:@".appex"] &&
           ![name containsString:@"coreservices"] && ![name containsString:@"privateframeworks"] &&
           ![name containsString:@".framework"] && ![name containsString:@"helper"] &&
@@ -471,11 +473,15 @@ std::tuple<std::string, int, bool> GetEditorState() {
                         [sourceData length] / sizeof(wchar_t));
     std::string narrow(source.begin(), source.end());
 
-    // Bulleted lists in the Slack app send these characters in place of the bullet
-    // 3n + 1-th level: u\0006 (acknowledge)
-    // 3n + 2-th level: u\0007 (bell)
-    // 3n-th level: \t (tab)
-    // We replace the first two with a space to maintain the proper cursor position
+    // Bulleted lists in the Slack app send these characters in place of the
+    // bullet:
+    //
+    //  * 3n + 1-th level: u\0006 (acknowledge)
+    //  * 3n + 2-th level: u\0007 (bell)
+    //  * 3n-th level: \t (tab)
+    //
+    // We replace the first two with a space to
+    // maintain the proper cursor position
     for (CFIndex i = 0; i < (int)narrow.size(); i++) {
       if (narrow[i] == '\u0006' || narrow[i] == '\u0007') {
         narrow[i] = ' ';
@@ -489,8 +495,8 @@ std::tuple<std::string, int, bool> GetEditorState() {
       int newLineCount = 0;
       for (CFIndex i = 0; (i < range.location + newLineCount) && (i < (int)narrow.size()); i++) {
         if (narrow[i] == '\n') {
-          // Double newlines update the range.location property correctly, so avoid double
-          // counting
+          // Double newlines update the range.location property correctly, so
+          // avoid double counting
           if (i > 0 && narrow[i - 1] != '\n') {
             newLineCount++;
           }
@@ -511,64 +517,6 @@ std::tuple<std::string, int, bool> GetEditorState() {
 
   std::get<2>(result) = false;
   CFRelease(field);
-  return result;
-}
-
-std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
-  long delay = 30000;
-  std::tuple<std::string, int, bool> result;
-  std::get<2>(result) = true;
-
-  NSPasteboard* pasteboard = NSPasteboard.generalPasteboard;
-  [pasteboard declareTypes:@[ NSPasteboardTypeString ] owner:NULL];
-  NSString* previous = @"";
-  if (pasteboard.pasteboardItems.count > 0) {
-    previous = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-  }
-
-  if (paragraph) {
-    PressKey("up", std::vector<std::string>{"option", "shift"});
-    usleep(delay);
-  } else {
-    PressKey("left", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-    PressKey("up", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-  }
-
-  PressKey("c", std::vector<std::string>{"command"});
-  usleep(delay);
-  PressKey("right", std::vector<std::string>{});
-  usleep(delay);
-
-  if (pasteboard.pasteboardItems.count == 0) {
-    return result;
-  }
-  NSString* left = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-
-  if (paragraph) {
-    PressKey("down", std::vector<std::string>{"option", "shift"});
-    usleep(delay);
-  } else {
-    PressKey("right", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-    PressKey("down", std::vector<std::string>{"command", "shift"});
-    usleep(delay);
-  }
-
-  PressKey("c", std::vector<std::string>{"command"});
-  usleep(delay);
-  PressKey("left", std::vector<std::string>{});
-
-  if (pasteboard.pasteboardItems.count == 0) {
-    return result;
-  }
-  NSString* right = [pasteboard.pasteboardItems[0] stringForType:NSPasteboardTypeString];
-
-  [pasteboard setString:previous forType:NSPasteboardTypeString];
-  std::get<0>(result) = [[NSString stringWithFormat:@"%@%@", left, right] UTF8String];
-  std::get<1>(result) = left.length;
-  std::get<2>(result) = false;
   return result;
 }
 
@@ -674,69 +622,71 @@ std::tuple<CGKeyCode, bool, bool> GetVirtualKeyAndModifiers(const std::string& k
     return result;
   }
 
-  if (key == "enter" || key == "\n" || key == "return") {
+  std::string lower = key;
+  ToLower(lower);
+  if (lower == "enter" || key == "\n" || lower == "return") {
     std::get<0>(result) = CGKeyCode(kVK_Return);
-  } else if (key == "tab" || key == "\t") {
+  } else if (lower == "tab" || key == "\t") {
     std::get<0>(result) = CGKeyCode(kVK_Tab);
-  } else if (key == "space" || key == " ") {
+  } else if (lower == "space" || key == " ") {
     std::get<0>(result) = CGKeyCode(kVK_Space);
-  } else if (key == "backspace" || key == "delete") {
+  } else if (lower == "backspace" || lower == "delete") {
     std::get<0>(result) = CGKeyCode(kVK_Delete);
-  } else if (key == "forwarddelete") {
+  } else if (lower == "forwarddelete") {
     std::get<0>(result) = CGKeyCode(kVK_ForwardDelete);
-  } else if (key == "escape") {
+  } else if (lower == "escape") {
     std::get<0>(result) = CGKeyCode(kVK_Escape);
-  } else if (key == "command" || key == "cmd" || key == "commandOrControl") {
+  } else if (lower == "command" || lower == "cmd" || lower == "commandOrControl") {
     std::get<0>(result) = CGKeyCode(kVK_Command);
-  } else if (key == "caps") {
+  } else if (lower == "caps") {
     std::get<0>(result) = CGKeyCode(kVK_CapsLock);
-  } else if (key == "shift") {
+  } else if (lower == "shift") {
     std::get<0>(result) = CGKeyCode(kVK_Shift);
-  } else if (key == "option" || key == "alt") {
+  } else if (lower == "option" || lower == "alt") {
     std::get<0>(result) = CGKeyCode(kVK_Option);
-  } else if (key == "control" || key == "ctrl") {
+  } else if (lower == "control" || lower == "ctrl") {
     std::get<0>(result) = CGKeyCode(kVK_Control);
-  } else if (key == "function" || key == "fn") {
+  } else if (lower == "function" || lower == "fn") {
     std::get<0>(result) = CGKeyCode(kVK_Function);
-  } else if (key == "home") {
+  } else if (lower == "home") {
     std::get<0>(result) = CGKeyCode(kVK_Home);
-  } else if (key == "pageup") {
+  } else if (lower == "pageup") {
     std::get<0>(result) = CGKeyCode(kVK_PageUp);
-  } else if (key == "end") {
+  } else if (lower == "end") {
     std::get<0>(result) = CGKeyCode(kVK_End);
-  } else if (key == "pagedown") {
+  } else if (lower == "pagedown") {
     std::get<0>(result) = CGKeyCode(kVK_PageDown);
-  } else if (key == "left") {
+  } else if (lower == "left") {
     std::get<0>(result) = CGKeyCode(kVK_LeftArrow);
-  } else if (key == "right") {
+  } else if (lower == "right") {
     std::get<0>(result) = CGKeyCode(kVK_RightArrow);
-  } else if (key == "down") {
+  } else if (lower == "down") {
     std::get<0>(result) = CGKeyCode(kVK_DownArrow);
-  } else if (key == "up") {
+  } else if (lower == "up") {
     std::get<0>(result) = CGKeyCode(kVK_UpArrow);
-  } else if (key == "f1") {
+  } else if (lower == "f1") {
     std::get<0>(result) = CGKeyCode(kVK_F1);
-  } else if (key == "f2") {
+  } else if (lower == "f2") {
     std::get<0>(result) = CGKeyCode(kVK_F2);
-  } else if (key == "f3") {
+  } else if (lower == "f3") {
     std::get<0>(result) = CGKeyCode(kVK_F3);
-  } else if (key == "f4") {
+  } else if (lower == "f4") {
     std::get<0>(result) = CGKeyCode(kVK_F4);
-  } else if (key == "f5") {
+  } else if (lower == "f5") {
     std::get<0>(result) = CGKeyCode(kVK_F5);
-  } else if (key == "f6") {
+  } else if (lower == "f6") {
     std::get<0>(result) = CGKeyCode(kVK_F6);
-  } else if (key == "f7") {
+  } else if (lower == "f7") {
     std::get<0>(result) = CGKeyCode(kVK_F7);
-  } else if (key == "f8") {
+  } else if (lower == "f8") {
     std::get<0>(result) = CGKeyCode(kVK_F8);
-  } else if (key == "f9") {
+  } else if (lower == "f9") {
     std::get<0>(result) = CGKeyCode(kVK_F9);
-  } else if (key == "f10") {
+  } else if (lower == "f10") {
     std::get<0>(result) = CGKeyCode(kVK_F10);
-  } else if (key == "f11") {
+  } else if (lower == "f11") {
     std::get<0>(result) = CGKeyCode(kVK_F11);
-  } else if (key == "f12") {
+  } else if (lower == "f12") {
     std::get<0>(result) = CGKeyCode(kVK_F12);
   }
 
@@ -829,9 +779,9 @@ void MouseUp(const std::string& button) {
   CFRelease(event);
 }
 
-void PressKey(const std::string& key, const std::vector<std::string>& modifiers) {
-  ToggleKey(key, modifiers, true);
-  ToggleKey(key, modifiers, false);
+void PressKey(const std::string& key, const std::vector<std::string>& modifiers, int delay) {
+  ToggleKey(key, modifiers, true, delay);
+  ToggleKey(key, modifiers, false, delay);
 }
 
 void SetEditorState(const std::string& text, int cursor, int cursorEnd) {
@@ -876,7 +826,8 @@ void SetMouseLocation(int x, int y) {
   usleep(100000);
 }
 
-void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down) {
+void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers, bool down,
+               int delay) {
   std::vector<std::string> adjustedModifiers = modifiers;
   std::tuple<CGKeyCode, bool, bool> keycode = GetVirtualKeyAndModifiers(key);
   if (std::get<1>(keycode)) {
@@ -943,12 +894,7 @@ void ToggleKey(const std::string& key, const std::vector<std::string>& modifiers
   CFRelease(source);
   CFRelease(event);
 
-  // determined empirically by typing into a variety of applications
-  usleep(8000);
-}
-
-void ToLower(std::string& s) {
-  std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
+  usleep(delay * 1000);
 }
 
 }  // namespace driver

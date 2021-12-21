@@ -155,30 +155,6 @@ Napi::Promise GetEditorState(const Napi::CallbackInfo& info) {
   return deferred.Promise();
 }
 
-Napi::Promise GetEditorStateFallback(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
-
-  bool paragraph = info[0].As<Napi::Boolean>().Value();
-
-#ifdef __linux__
-  Display* display = XOpenDisplay(NULL);
-  std::tuple<std::string, int, bool> state = driver::GetEditorStateFallback(display, paragraph);
-  XCloseDisplay(display);
-#else
-  std::tuple<std::string, int, bool> state;
-  AUTORELEASE(state = driver::GetEditorStateFallback(paragraph));
-#endif
-
-  Napi::Object result = Napi::Object::New(env);
-  result.Set("text", std::get<0>(state));
-  result.Set("cursor", std::get<1>(state));
-  result.Set("error", std::get<2>(state));
-  deferred.Resolve(result);
-
-  return deferred.Promise();
-}
-
 Napi::Promise GetMouseLocation(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(env);
@@ -247,6 +223,8 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
 
   Napi::Array modifierArray = info[1].As<Napi::Array>();
   int count = info[2].As<Napi::Number>().Int32Value();
+  int delay = info[3].As<Napi::Number>().Int32Value();
+
   if (count < 1) {
     deferred.Resolve(env.Undefined());
     return deferred.Promise();
@@ -264,9 +242,9 @@ Napi::Promise PressKey(const Napi::CallbackInfo& info) {
 
   for (int i = 0; i < count; i++) {
 #ifdef __linux__
-    driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(), modifiers);
+    driver::PressKey(display, info[0].As<Napi::String>().Utf8Value(), modifiers, delay);
 #else
-    AUTORELEASE(driver::PressKey(info[0].As<Napi::String>().Utf8Value(), modifiers));
+    AUTORELEASE(driver::PressKey(info[0].As<Napi::String>().Utf8Value(), modifiers, delay));
 #endif
   }
 
@@ -309,6 +287,7 @@ Napi::Promise TypeText(const Napi::CallbackInfo& info) {
 
   std::vector<std::string> modifiers;
   std::string text = info[0].As<Napi::String>().Utf8Value();
+  int delay = info[1].As<Napi::Number>().Int32Value();
 
 #ifdef __linux__
   Display* display = XOpenDisplay(NULL);
@@ -316,9 +295,9 @@ Napi::Promise TypeText(const Napi::CallbackInfo& info) {
 
   for (char c : text) {
 #ifdef __linux__
-    driver::PressKey(display, std::string(1, c), modifiers);
+    driver::PressKey(display, std::string(1, c), modifiers, delay);
 #else
-    AUTORELEASE(driver::PressKey(std::string(1, c), modifiers));
+    AUTORELEASE(driver::PressKey(std::string(1, c), modifiers, delay));
 #endif
   }
 
@@ -342,8 +321,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "getClickableButtons"),
               Napi::Function::New(env, GetClickableButtons));
   exports.Set(Napi::String::New(env, "getEditorState"), Napi::Function::New(env, GetEditorState));
-  exports.Set(Napi::String::New(env, "getEditorStateFallback"),
-              Napi::Function::New(env, GetEditorStateFallback));
   exports.Set(Napi::String::New(env, "getMouseLocation"),
               Napi::Function::New(env, GetMouseLocation));
   exports.Set(Napi::String::New(env, "getRunningApplications"),
