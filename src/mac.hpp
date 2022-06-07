@@ -32,6 +32,7 @@ std::vector<std::string> GetClickableButtons();
 std::tuple<std::string, int, bool> GetEditorState();
 std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph);
 std::tuple<int, int> GetMouseLocation();
+CGPoint GetMousePoint();
 CFStringRef GetLines(AXUIElementRef element);
 CFStringRef GetLineText(AXUIElementRef element, CFMutableArrayRef textChildren);
 std::string GetRoleDescription(AXUIElementRef element);

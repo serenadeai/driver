@@ -18,9 +18,8 @@ void Click(const std::string& button, int count) {
   CGEventType upEventType = button == "left" ? kCGEventLeftMouseUp : kCGEventRightMouseUp;
   CGMouseButton mouseButton = button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight;
 
-  std::tuple<int, int> location = GetMouseLocation();
   CGEventRef event = CGEventCreateMouseEvent(
-      NULL, downEventType, CGPointMake(std::get<0>(location), std::get<1>(location)), mouseButton);
+      NULL, downEventType, GetMousePoint(), mouseButton);
   CGEventPost(kCGHIDEventTap, event);
   CGEventSetType(event, upEventType);
   CGEventPost(kCGHIDEventTap, event);
@@ -572,11 +571,16 @@ std::tuple<std::string, int, bool> GetEditorStateFallback(bool paragraph) {
   return result;
 }
 
+CGPoint GetMousePoint() {
+  CGEventRef e = CGEventCreate(NULL);
+  CGPoint point = CGEventGetLocation(e);
+  CFRelease(e);
+  return point;
+}
+
 std::tuple<int, int> GetMouseLocation() {
-  std::tuple<int, int> result;
-  std::get<0>(result) = NSEvent.mouseLocation.x;
-  std::get<1>(result) = NSScreen.mainScreen.frame.size.height - NSEvent.mouseLocation.y;
-  return result;
+  CGPoint point = GetMousePoint();
+  return std::make_tuple(point.x, point.y);
 }
 
 std::string GetRoleDescription(AXUIElementRef element) {
@@ -810,21 +814,17 @@ bool IsButton(AXUIElementRef element) {
 }
 
 void MouseDown(const std::string& button) {
-  std::tuple<int, int> location = GetMouseLocation();
   CGEventRef event = CGEventCreateMouseEvent(
-      NULL, button == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown,
-      CGPointMake(std::get<0>(location), std::get<1>(location)),
+      NULL, button == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown, GetMousePoint(),
       button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
   CGEventPost(kCGHIDEventTap, event);
   CFRelease(event);
 }
 
 void MouseUp(const std::string& button) {
-  std::tuple<int, int> location = GetMouseLocation();
   CGEventRef event =
       CGEventCreateMouseEvent(NULL, button == "left" ? kCGEventLeftMouseUp : kCGEventRightMouseUp,
-                              CGPointMake(std::get<0>(location), std::get<1>(location)),
-                              button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
+                              GetMousePoint(), button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
   CGEventPost(kCGHIDEventTap, event);
   CFRelease(event);
 }
