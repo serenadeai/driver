@@ -814,21 +814,17 @@ bool IsButton(AXUIElementRef element) {
 }
 
 void MouseDown(const std::string& button) {
-  std::tuple<int, int> location = GetMouseLocation();
   CGEventRef event = CGEventCreateMouseEvent(
-      NULL, button == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown,
-      CGPointMake(std::get<0>(location), std::get<1>(location)),
+      NULL, button == "left" ? kCGEventLeftMouseDown : kCGEventRightMouseDown, GetMousePoint(),
       button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
   CGEventPost(kCGHIDEventTap, event);
   CFRelease(event);
 }
 
 void MouseUp(const std::string& button) {
-  std::tuple<int, int> location = GetMouseLocation();
   CGEventRef event =
       CGEventCreateMouseEvent(NULL, button == "left" ? kCGEventLeftMouseUp : kCGEventRightMouseUp,
-                              CGPointMake(std::get<0>(location), std::get<1>(location)),
-                              button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
+                              GetMousePoint(), button == "left" ? kCGMouseButtonLeft : kCGMouseButtonRight);
   CGEventPost(kCGHIDEventTap, event);
   CFRelease(event);
 }
