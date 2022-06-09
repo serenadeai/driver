@@ -5,6 +5,17 @@ const path = require("path");
 const shortcut = require("windows-shortcuts");
 const lib = require("bindings")("serenade-driver.node");
 
+const cleanEnvironmentVariables = Object.fromEntries(
+  Object.entries(process.env).filter(
+    ([name]) => !([
+      "CHROME_CRASHPAD_PIPE_NAME",
+      "ELECTRON_RUN_AS_NODE",
+      "NODE_ENV",
+      "ORIGINAL_XDG_CURRENT_DESKTOP"
+    ].includes(name))
+  )
+)
+
 const applicationMatches = (application, possible, aliases) => {
   let alias = application;
   if (aliases && aliases[application]) {
@@ -270,6 +281,11 @@ exports.runShell = async (command, args, options) => {
   let stderr = "";
   if (!options) {
     options = {};
+  }
+
+  options.env = {
+    ...cleanEnvironmentVariables,
+    ...options.env
   }
 
   const spawned = child_process.spawn(command, args, options);
